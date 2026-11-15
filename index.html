@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>İsabet Oranı · Bet Builder</title>
+<style>
+:root{
+  --bg:#0b0d10; --panel:#13161b; --panel2:#181c22; --line:#252a32; --text:#e8eaed; --muted:#8a919c;
+  --green:#3ddc84; --green-bg:#16362a; --yellow:#e6c14a; --yellow-bg:#3a3317; --red:#a7333d; --grey:#3a3f47;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+header .logo{font-weight:800;font-size:17px;white-space:nowrap}
+header .status{color:var(--muted);font-size:12px}
+.frtgl{margin-left:auto;display:flex;gap:6px;align-items:center;font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;white-space:nowrap}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px}
+.btn:hover{border-color:#3a414c}
+.btn.green{background:var(--green-bg);border-color:#1f5a40;color:var(--green)}
+.tabs{display:inline-flex;gap:2px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:3px;flex-wrap:wrap}
+.tab{background:none;border:0;border-radius:7px;padding:6px 11px;color:var(--muted);font-weight:600}
+.tab span{opacity:.7;font-weight:500;margin-left:3px}
+.tab.on{background:#2a2f37;color:var(--text)}
+h1{font-size:24px;margin:20px 0 4px}
+.sub{color:var(--muted);margin:0 0 14px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 13px;font-weight:600}
+.chip span{color:var(--muted);font-weight:500;margin-left:4px}
+.chip.on{border-color:var(--green);color:var(--green);background:#0f2219}
+select{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit}
+.spacer{flex:1}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.row:hover{background:var(--panel2)}
+.lg{width:30px;height:30px;border-radius:7px;background:#1f242b;display:grid;place-items:center;font-size:10px;font-weight:700;color:var(--muted);flex:none;overflow:hidden}
+.pair{position:relative;width:38px;height:30px;flex:none}
+.pair .tl{position:absolute;width:24px;height:24px}
+.pair .tl:first-child{left:0;top:0}.pair .tl:last-child{right:0;bottom:0}
+.tl{display:inline-grid;place-items:center;width:18px;height:18px;flex:none;border-radius:50%;background:#1f242b;font-size:8px;font-weight:700;color:var(--muted);overflow:hidden;vertical-align:middle}
+.tl img{width:100%;height:100%;object-fit:contain}
+.tl.has{background:none}
+.mlogos{display:flex;gap:8px;align-items:center}.mlogos .tl{width:34px;height:34px;font-size:11px}
+.row .t{font-weight:700;font-size:15px}
+.row .m{color:var(--muted);font-size:12.5px}
+.row .avg{color:var(--muted);font-size:12px;min-width:90px;text-align:right}
+.badge{border-radius:6px;padding:3px 8px;font-weight:700;font-size:12.5px;white-space:nowrap}
+.b-g{background:var(--green-bg);color:var(--green)}
+.b-y{background:var(--yellow-bg);color:var(--yellow)}
+.b-n{background:#262a31;color:#b9bec6}
+.pager{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;color:var(--muted)}
+.pager .btn{border-radius:50%;width:34px;height:34px;padding:0}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+/* match page */
+.crumb{color:var(--muted);font-size:12.5px}
+.mhead{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.mhead h1{margin:6px 0 4px}
+.mhead .when{margin-left:auto;color:var(--muted)}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin:14px 0}
+.controls .lbl{color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.05em}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+@media(max-width:900px){.layout{grid-template-columns:1fr}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:start}
+@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px}
+.card.strong{border-color:#1f4a37}
+.ctop{display:flex;gap:10px;padding:12px 12px 8px}
+.rank{color:var(--muted);font-size:11px;width:16px;padding-top:2px}
+.ctop .t{font-weight:700}
+.ctop .s{color:var(--muted);font-size:12px}
+.add{margin-left:auto;width:28px;height:28px;border-radius:50%;background:#262b33;border:0;font-size:17px;flex:none}
+.add.on{background:var(--green);color:#0b0d10}
+.cbot{display:flex;gap:14px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);flex-wrap:wrap}
+.side{display:flex;gap:6px;align-items:center}
+.tm{font-size:10px;font-weight:700;color:var(--muted);background:#1f242b;border-radius:4px;padding:2px 4px}
+.strip{display:flex;gap:2px}
+.strip i{width:4px;height:13px;border-radius:1px;background:var(--grey)}
+.strip i.h{background:var(--green)} .strip i.x{background:var(--red)}
+.more{margin-left:auto;background:#1c2027;border:1px solid var(--line);border-radius:6px;padding:3px 8px;color:var(--muted);font-size:11.5px;font-weight:600}
+.cbot{cursor:pointer}.cbot:hover .more{color:var(--text);border-color:#3a414c}
+.gtbl td{vertical-align:middle}.gtbl th[colspan]{color:var(--text);font-size:12.5px;padding:8px 4px}
+.gopp{display:inline-flex;gap:6px;align-items:center}.gopp .tl{width:16px;height:16px;font-size:7px}
+.glg{display:block;color:var(--muted);font-size:10.5px;margin-left:22px}
+.gven{color:var(--muted)}.gok td:first-child{box-shadow:inset 3px 0 var(--green)}.gno td:first-child{box-shadow:inset 3px 0 var(--red)}
+.detail{padding:0 12px 12px;display:none}
+.card.open .detail{display:block}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+td,th{padding:3px 4px;border-bottom:1px solid var(--line);text-align:left}
+th{color:var(--muted);font-weight:600}
+.ok{color:var(--green)} .no{color:#e46a74}
+.slip{position:sticky;top:12px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px}
+.slip h3{margin:0 0 10px;font-size:15px}
+.slip .leg{display:flex;justify-content:space-between;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:13px}
+.slip .leg button{background:none;border:0;color:var(--muted)}
+.slip .hint{color:var(--muted);font-size:13px;text-align:center;padding:18px 6px}
+.combo{margin-top:12px;font-size:13px}
+.combo .lineitem{display:flex;justify-content:space-between;align-items:center;padding:4px 0}
+summary{cursor:pointer;margin-bottom:8px}
+.note{color:var(--muted);font-size:11.5px;margin-top:8px}
+/* ---------- odds ---------- */
+.mv{font-size:11px;margin-right:4px;white-space:nowrap}.mv.dn{color:#6cb6ff}.mv.up{color:#b9bec6}
+.dq{display:inline-block;font-size:10.5px;color:var(--yellow);background:var(--yellow-bg);border-radius:5px;padding:1px 6px;margin-left:6px;white-space:nowrap}
+.odd{display:inline-block;font-weight:800;color:var(--text);background:#1d2733;border:1px solid #2b3a4d;border-radius:6px;padding:2px 7px;font-size:13px;white-space:nowrap}
+.oddcell{text-align:center}.oddcell small{display:block;color:var(--muted);font-size:11px;margin-top:3px}
+.val{font-weight:800;text-align:center}.val small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+.v-pos{color:var(--green)}.v-neg{color:#e46a74}.v-0{color:var(--muted)}
+.chkrow{display:flex;gap:8px;align-items:center;font-size:12.5px;margin-top:10px;cursor:pointer}
+/* ---------- takip ---------- */
+.tsum{display:flex;gap:12px;flex-wrap:wrap;margin:6px 0 4px}
+.tsum div{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.tsum span{display:block;color:var(--muted);font-size:12px}.tsum b{font-size:22px}
+.th3{margin:22px 0 4px;font-size:15px}
+.ttbl td,.ttbl th{text-align:left;font-size:12.5px;padding:9px 12px}
+/* ---------- nav ---------- */
+.nav{display:flex;gap:4px;margin-left:18px}
+.nav a{padding:6px 12px;border-radius:8px;color:var(--muted);font-weight:600}
+.nav a.on{background:#232830;color:var(--text)}
+/* ---------- screener ---------- */
+.scr{display:grid;grid-template-columns:270px 1fr;gap:16px;align-items:start}
+@media(max-width:900px){.scr{grid-template-columns:1fr}}
+.fbox{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.fbox h4{margin:0 0 10px;font-size:15px}
+.flbl{display:flex;justify-content:space-between;color:var(--text);font-size:12.5px;font-weight:600;margin:12px 0 6px}
+.flbl span{color:var(--muted);font-weight:500}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:2px;gap:2px}
+.seg button{flex:1;background:none;border:0;border-radius:6px;padding:6px 6px;color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap}
+.seg button.on{background:#2a2f37;color:var(--text)}
+input[type=range]{width:100%;accent-color:var(--green)}
+.lglist{max-height:240px;overflow:auto;margin-top:8px;font-size:12.5px}
+.lglist label{display:flex;gap:6px;align-items:center;padding:3px 0;cursor:pointer}
+.lglist label span{margin-left:auto;color:var(--muted)}
+.search{width:100%;padding:9px 12px;border-radius:9px;border:1px solid var(--line);background:var(--panel);color:var(--text);font:inherit}
+.mtabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin:12px 0 0;flex-wrap:wrap}
+.mtabs button{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;color:var(--muted);font-weight:600}
+.mtabs button.on{color:var(--text);border-color:var(--green)}
+.mtabs button span{color:var(--muted);font-weight:500;margin-left:4px;font-size:12px}
+.stbl{width:100%;border-collapse:collapse;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:12px;font-size:13px}
+.stbl th{color:var(--muted);font-size:11px;letter-spacing:.05em;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:700}
+.stbl td{padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:middle}
+.stbl tr.r{cursor:pointer}.stbl tr.r:hover td{background:var(--panel2)}
+.tcell{display:flex;gap:12px;align-items:center}
+.tcell .tl{width:32px;height:32px;font-size:10px}
+.tname{font-weight:700;font-size:14px}
+.vs{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:12px;margin-top:3px;flex-wrap:wrap}
+.vs .chip{display:inline-flex;gap:5px;align-items:center;background:#1c2027;border-radius:6px;padding:2px 7px}
+.vs .chip b{color:var(--text);font-weight:600}
+.vs .tl{width:15px;height:15px;font-size:7px}
+.mk b{display:block;font-weight:700}.mk span{color:var(--muted);font-size:12.5px}
+.pct{font-weight:800;font-size:14px;text-align:center}
+.pct small{display:block;color:var(--muted);font-weight:500;font-size:11px}
+.p-g{color:var(--green)}.p-y{color:var(--yellow)}.p-n{color:#b9bec6}
+.cbtn{width:32px;height:32px;border-radius:50%;background:#232830;border:0;color:var(--muted)}
+/* ---------- drawer ---------- */
+.dshade{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:#101318;border-left:1px solid var(--line);z-index:21;overflow:auto;padding:16px 18px 40px}
+.dhead{display:flex;gap:12px;align-items:flex-start}
+.dhead .tl{width:40px;height:40px;font-size:12px}
+.dhead h3{margin:0;font-size:18px}
+.dhead .sub2{color:var(--muted);font-size:13px;margin-top:2px}
+.dhead .x{background:none;border:0;color:var(--muted);font-size:20px}
+.dteams{display:flex;gap:6px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:4px;margin:14px 0 10px}
+.dteams button{flex:1;display:flex;gap:8px;align-items:center;justify-content:center;background:none;border:0;border-radius:9px;padding:9px;color:var(--muted);font-weight:700}
+.dteams button.on{background:#232830;color:var(--text)}
+.dteams .tl{width:18px;height:18px}
+.drow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.drow .seg{flex:none}.drow .seg button{padding:6px 12px}
+.stabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px}
+.stabs button{background:none;border:0;padding:8px 12px;color:var(--muted);font-weight:600;border-radius:8px 8px 0 0}
+.stabs button.on{background:#232830;color:var(--text)}
+.dsum{display:flex;gap:18px;align-items:flex-end;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;flex-wrap:wrap}
+.dsum div{font-size:12px;color:var(--muted)}
+.dsum b{display:block;font-size:20px;color:var(--text);margin-top:2px}
+.chart{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-top:12px;padding:10px}
+.chart svg{width:100%;height:auto;display:block}
+.ctrls{display:flex;gap:10px;justify-content:center;margin-top:10px}
+.stepper{display:flex;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:5px 10px;font-size:13px}
+.stepper button{background:none;border:0;color:var(--muted);font-size:16px;width:22px}
+.stepper b{min-width:30px;text-align:center}
+/* ---------- genel düzen ---------- */
+.nav a{white-space:nowrap}
+.mobonly{display:none}
+@media (max-width: 1100px){
+  header .status{display:none}
+}
+/* ---------- telefon ---------- */
+@media (max-width: 760px){
+  body{font-size:13.5px}
+  .wrap{padding:12px 10px 50px}
+  header{gap:8px;margin-bottom:12px}
+  header .logo{font-size:15px}
+  #cfg{margin-left:auto}
+  .nav{order:5;width:100%;margin:0;overflow-x:auto;scrollbar-width:none}
+  .nav a{padding:7px 11px;font-size:13px}
+  .frtgl{order:6;margin-left:0;font-size:12px;padding:5px 8px}
+  h1{font-size:20px;margin:12px 0 4px}
+  .tabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+  .tab{white-space:nowrap}
+  .chips{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .chip{white-space:nowrap}
+  .controls{gap:8px;padding:8px}
+  .controls .seg{flex-wrap:nowrap}
+  .row{flex-wrap:wrap;gap:8px 10px;padding:12px}
+  .row .avg{display:none}
+  .row > div[style*="flex:1"]{flex-basis:calc(100% - 50px)}
+  .row .t{font-size:14px}
+  .ctop .t{font-size:13.5px}
+  .cbot{gap:8px}
+  .strip i{width:3px}
+  .mhead h1{font-size:19px}
+  .mhead .when{margin-left:0;width:100%}
+  .mobonly{display:inline-block;margin:0 0 10px}
+  .fpanel{display:none}.fpanel.open{display:block}
+  .scr > section, .scr > aside, .layout > *, .grid > *{min-width:0}
+  .ttbl{display:block;overflow-x:auto;white-space:nowrap}
+  /* Prop Screener: satır başına kart */
+  .scrtbl, .scrtbl tbody{display:block}
+  .scrtbl tr:first-child{display:none}
+  .scrtbl tr.r{display:grid;grid-template-columns:1fr 1fr 1fr auto;border-bottom:1px solid var(--line);padding:10px 4px}
+  .scrtbl tr.r td{border:0;padding:4px 8px}
+  .scrtbl tr.r td:nth-child(1){grid-column:1 / -1}
+  .scrtbl tr.r td:nth-child(2){grid-column:1 / 4}
+  .scrtbl tr.r td:nth-child(3){grid-column:4;text-align:right}
+  .scrtbl tr.r td:nth-child(7){align-self:center}
+  .scrtbl td[data-l]::before{content:attr(data-l);display:block;color:var(--muted);font-size:10.5px;font-weight:500;margin-bottom:2px}
+  .scrtbl .vs{gap:4px}
+  .stbl td,.stbl th{padding:8px 10px}
+  .tcell .tl{width:26px;height:26px}
+  .tsum div{min-width:calc(50% - 6px);padding:10px}
+  .tsum b{font-size:18px}
+  .drawer{padding:12px 12px 40px}
+  .dsum{gap:12px}.dsum b{font-size:17px}
+  .stabs{flex-wrap:nowrap;overflow-x:auto}
+  .slip{position:static}
+  .list .pager{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="logo" href="#/">⚽ İsabet Oranı</a>
+    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a></nav>
+    <label class="frtgl" title="Kapalıyken hazırlık maçları hem takımların geçmişinden hem de fikstürden çıkarılır"><input type="checkbox" id="frToggle"> Hazırlık maçlarını dahil et</label>
+    <span class="status" id="status"></span>
+    <button class="btn" id="cfg" title="Veri kaynağını değiştir">⚙</button>
+  </header>
+  <main id="app"></main>
+  <footer id="foot" style="margin-top:28px;color:var(--muted)"></footer>
+</div>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const GUN = ["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"];
+const todayStr = () => new Date().toLocaleDateString("sv-SE");
+const tomorrowStr = () => { const d = new Date(); d.setDate(d.getDate()+1); return d.toLocaleDateString("sv-SE"); };
+function dayLabel(d){ if(d===todayStr())return "Bugün"; if(d===tomorrowStr())return "Yarın"; const x=new Date(d+"T12:00"); return `${GUN[x.getDay()]} ${x.getDate()}`; }
+function when(ko){ return `${dayLabel(ko.slice(0,10))} ${ko.slice(11,16)}`; }
+const badgeCls = r => r >= 0.8 ? "b-g" : r >= 0.6 ? "b-y" : "b-n";
+const short = t => esc(t.replace(/[^A-Za-zÇĞİÖŞÜçğıöşü ]/g,"").slice(0,3).toUpperCase());
+const strip = hits => `<span class="strip">${hits.map(h => `<i class="${h===1?"h":h===0?"x":""}"></i>`).join("")}</span>`;
+const initials = t => esc(String(t||"").replace(/\(.*?\)/g,"").trim().split(/\s+/).map(w=>w[0]).join("").slice(0,3).toUpperCase());
+function logo(team){
+  const p = DB && DB.logos ? DB.logos[team] : null;
+  return p ? `<span class="tl has" title="${esc(team)}"><img src="https://a.espncdn.com${esc(p)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentNode.classList.remove('has');this.parentNode.textContent='${initials(team)}'"></span>`
+           : `<span class="tl" title="${esc(team)}">${initials(team)}</span>`;
+}
+/* ---- iddaa oranları ---- */
+const lk = L => String(L);
+function oddAt(fx, key, L, dir){            // dir: "over"/"under"
+  const t = fx && fx.odds && fx.odds[key]; if (!t) return null;
+  const v = t[lk(L)]; if (!v) return null;
+  return dir === "over" ? v[1] : v[0];
+}
+const TEAM_ODD_KEY = { gf: ["hg", "ag"], cf: ["hc", "ac"], sf: ["hs", "as"], tf: ["hsot", "asot"] };
+function legOddFull(fx, l){                  // Bet Builder ayağı -> { odd, p (marjsız olasılık), fair }
+  if (!fx || !fx.odds) return null;
+  const o = fx.odds, mid = l.id.split("@")[0], side = l.subject ? (l.subject === fx.home ? 0 : 1) : null;
+  const out = (odd, p, okey) => odd && odd >= 1.02 ? { odd, p: p ?? 1 / odd, fair: p != null, open: fx.open ? fx.open[okey] || null : null } : null;   // 1.00 = kapalı market
+  const norm = arr => { if (!arr || arr.some(x => !x)) return null; const s = arr.reduce((a, x) => a + 1 / x, 0); return arr.map(x => (1 / x) / s); };
+  if (mid === "btts" || mid === "btts_no") { const i = mid === "btts" ? 0 : 1, f = norm(o.btts); return o.btts ? out(o.btts[i], f && f[i], "btts||" + "yn"[i]) : null; }
+  if (/^r_(home|draw|away)$/.test(mid)) { const i = { r_home: 0, r_draw: 1, r_away: 2 }[mid], f = norm(o["1x2"]); return o["1x2"] ? out(o["1x2"][i], f && f[i], "1x2||" + ["1", "X", "2"][i]) : null; }
+  if (/^r_(1x|12|x2)$/.test(mid)) {
+    const i = { r_1x: 0, r_12: 1, r_x2: 2 }[mid], f = norm(o["1x2"]);
+    return o.dc ? out(o.dc[i], f ? [f[0] + f[1], f[0] + f[2], f[1] + f[2]][i] : null, "dc||" + ["1X", "12", "X2"][i]) : null;
+  }
+  const m = /^(\w+?)_(o|u)([\d.]+)$/.exec(mid); if (!m) return null;
+  const fam = m[1], i = m[2] === "o" ? 1 : 0, L = m[3];
+  const key = { goals: "g", htgoals: "htg", corners: "c", cards: "k", shots: "ts", sot: "tsot",
+                tgoals: ["hg", "ag"], tcorners: ["hc", "ac"], tshots: ["hs", "as"], tsot: ["hsot", "asot"] }[fam];
+  if (!key) return null;
+  const k = Array.isArray(key) ? key[side] : key, t = o[k], v = t && t[String(L)];
+  if (!v || !v[i]) return null;
+  return out(v[i], v[0] >= 1.02 && v[1] >= 1.02 ? (1 / v[i]) / (1 / v[0] + 1 / v[1]) : null, `${k}|${L}|${"uo"[i]}`);
+}
+const missingOf = l => l.sides.reduce((a, s) => a + s.strip.filter(x => x == null).length, 0);
+const dqTag = l => { const m = missingOf(l); return m ? `<span class="dq" title="Son maçların ${m} tanesinde bu istatistik kaynakta yok; isabet daha az maça dayanıyor">⚠ ${m} maç verisiz</span>` : ""; };
+const legOdd = (fx, l) => { const r = legOddFull(fx, l); return r ? r.odd : null; };
+function oddTag(o, open){
+  if (!o) return "";
+  const mv = open && Math.abs(open - o) >= 0.01
+    ? `<span class="mv ${o < open ? "dn" : "up"}" title="İlk görülen oran ${open.toFixed(2)} → şimdi ${o.toFixed(2)}">${open.toFixed(2)}${o < open ? "▼" : "▲"}</span>` : "";
+  return `${mv}<span class="odd" title="iddaa oranı · ima edilen olasılık %${Math.round(100 / o)}">${o.toFixed(2)}</span>`;
+}
+const legOddTag = (fx, l) => { const r = legOddFull(fx, l); return r ? oddTag(r.odd, r.open) : ""; };
+const fmtVal = v => v === null || v === undefined ? "–" : v;
+
+/* ---------------- Veri + isabet motoru (tamamı tarayıcıda) ---------------- */
+let DB = null;
+function getRepo(){ try { return localStorage.getItem("io_repo") || ""; } catch (e) { return window._repo || ""; } }
+function setRepo(v){ window._repo = v; try { v ? localStorage.setItem("io_repo", v) : localStorage.removeItem("io_repo"); } catch (e) {} }
+function getTok(){ try { return localStorage.getItem("io_tok") || ""; } catch (e) { return window._tok || ""; } }
+function setTok(v){ window._tok = v; try { v ? localStorage.setItem("io_tok", v) : localStorage.removeItem("io_tok"); } catch (e) {} }
+function dataUrl(){ const v = getRepo().trim(); if (!v) return ""; return /^https?:/.test(v) ? v : `https://raw.githubusercontent.com/${v.replace(/^\/+|\/+$/g, "")}/data/data.json`; }
+function showSetup(msg){
+  $("#app").innerHTML = `<div class="list" style="padding:22px;max-width:560px">
+    <h1 style="margin-top:0;font-size:19px">Veri kaynağı</h1>
+    ${msg ? `<p class="no">${esc(msg)}</p>` : ""}
+    <p class="sub">GitHub deponu <b>kullanıcı-adı/depo-adı</b> şeklinde yaz . Bu ayar sadece bu tarayıcıda saklanır.</p>
+    <input id="repo" value="${esc(getRepo() || "kyctn/isabet-veri")}" placeholder="kullanıcı-adı/depo-adı" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
+    <p class="sub" style="margin-top:14px">Erişim anahtarı (gizli depo için; github_pat_ ile başlar). Sadece bu tarayıcıda saklanır.</p>
+    <input id="tok" type="password" value="${esc(getTok())}" placeholder="github_pat_..." autocomplete="off" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
+    <p><button class="btn green" id="saveRepo">Kaydet</button></p></div>`;
+  $("#saveRepo").onclick = () => { setRepo($("#repo").value.trim()); setTok($("#tok").value.trim()); DB = null; loadStatus().catch(()=>{}); route(); };
+}
+const pad = x => String(x).padStart(2, "0");
+const localStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+async function loadDB(){
+  if (DB) return DB;
+  const src = dataUrl();
+  if (!src) throw new Error("NO_SOURCE");
+  let r; const tok = getTok(), repo = getRepo().trim();
+  try {
+    r = tok && !/^https?:/.test(repo)
+      ? await fetch(`https://api.github.com/repos/${repo}/contents/data.json?ref=data`, {cache: "no-store", headers: {Authorization: "Bearer " + tok, Accept: "application/vnd.github.raw+json"}})
+      : await fetch(src + "?t=" + Math.floor(Date.now() / 6e5), {cache: "no-store"});
+  } catch (e) { throw new Error("Veri adresine ulaşılamadı. İnternet bağlantını kontrol et."); }
+  if (r.status === 401 || r.status === 403) throw new Error("Erişim anahtarı geçersiz ya da süresi dolmuş (" + r.status + ").");
+  if (!r.ok) throw new Error("Veri bulunamadı (" + r.status + "). Depo gizliyse erişim anahtarı gerekir; depo adını ve anahtarı kontrol et.");
+  const d = await r.json();
+  const limit = Date.now() - 2 * 3600e3;
+  d.fxAll = d.fixtures.filter(f => new Date(f.kickoff).getTime() >= limit)
+    .map((f, i) => ({ id: i, div: f.div, home: f.home, away: f.away, kickoff: localStr(new Date(f.kickoff)), league: d.leagues[f.div] || f.div, odds: f.odds || null, iddaa: f.iddaa || null, friendly: isFriendly(f.div) }));
+  DB = d; applyFriendly();
+  return DB;
+}
+/* ---- hazırlık maçı filtresi ---- */
+const isFriendly = lg => /friendl|hazırlık/i.test(lg || "");
+function getFr(){ try { return localStorage.getItem("io_friendly") === "1"; } catch (e) { return !!window._fr; } }
+function setFr(v){ window._fr = v; try { localStorage.setItem("io_friendly", v ? "1" : "0"); } catch (e) {} }
+function applyFriendly(){
+  if (!DB) return;
+  const inc = getFr();
+  DB.byTeam = {};
+  for (const m of DB.matches) {
+    if (!inc && isFriendly(m[0])) continue;
+    (DB.byTeam[m[2]] ||= []).push(m); (DB.byTeam[m[3]] ||= []).push(m);
+  }
+  DB.fx = inc ? DB.fxAll : DB.fxAll.filter(f => !f.friendly);
+  DB.frKey = inc ? "fr1" : "fr0";
+}
+const add = (a, b) => a == null || b == null ? null : a + b;
+function view(m, team){
+  const h = m[2] === team, p = (i, j) => h ? [m[i], m[j]] : [m[j], m[i]];
+  const [gf, ga] = p(4,5), [hgf, hga] = p(6,7), [sf, sa] = p(8,9), [tf, ta] = p(10,11), [cf, ca] = p(12,13), [yf, ya] = p(14,15), [rf, ra] = p(16,17);
+  return { lg: m[0], date: m[1], venue: h ? "H" : "A", opp: h ? m[3] : m[2], gf, ga, hgf, hga, sf, sa, tf, ta, cf, ca,
+           kf: add(yf, rf), ka: add(ya, ra), res: gf > ga ? "W" : gf === ga ? "D" : "L" };
+}
+function teamGames(team, n, venue){
+  let l = DB.byTeam[team] || [];
+  if (venue === "home") l = l.filter(m => m[2] === team);
+  if (venue === "away") l = l.filter(m => m[3] === team);
+  return l.slice(0, n).map(m => view(m, team));
+}
+const MARKETS = [];
+function ou(cat, fam, scope, stat, overs, olbl, unders, ulbl){
+  for (const L of overs) MARKETS.push({ id: `${fam}_o${L}`, cat, family: fam + "_o", scope, kind: "over", line: L, label: olbl.replace("{L}", L), stat });
+  for (const L of (unders || [])) MARKETS.push({ id: `${fam}_u${L}`, cat, family: fam + "_u", scope, kind: "under", line: L, label: ulbl.replace("{L}", L), stat });
+}
+const yes = (id, cat, scope, label, fn) => MARKETS.push({ id, cat, family: id, scope, kind: "yes", line: null, label, yes: fn });
+const res = (id, label, o) => MARKETS.push({ id, cat: "Sonuç", family: id, scope: "result", kind: "yes", line: null, label, outcomes: o });
+ou("Gol","tgoals","team", m=>m.gf, [0.5,1.5,2.5], "{T} {L} üstü gol", [1.5,2.5], "{T} {L} altı gol");
+yes("t_concede","Gol","team","{T} gol yer", m=>m.ga>0);
+yes("t_cs","Gol","team","{T} gol yemez", m=>m.ga===0);
+ou("Gol","goals","match", m=>add(m.gf,m.ga), [1.5,2.5,3.5], "{L} üstü gol", [1.5,2.5,3.5], "{L} altı gol");
+ou("Gol","htgoals","match", m=>add(m.hgf,m.hga), [0.5,1.5,2.5], "İY {L} üstü gol", [0.5,1.5,2.5], "İY {L} altı gol");
+yes("btts","Gol","match","KG Var", m=>m.gf>0&&m.ga>0);
+yes("btts_no","Gol","match","KG Yok", m=>!(m.gf>0&&m.ga>0));
+res("r_home","{H} kazanır","H"); res("r_away","{A} kazanır","A"); res("r_draw","Beraberlik","D");
+res("r_1x","{H} veya beraberlik","HD"); res("r_x2","{A} veya beraberlik","AD"); res("r_12","Beraberlik olmaz","HA");
+ou("Korner","tcorners","team", m=>m.cf, [2.5,3.5,4.5,5.5,6.5,7.5], "{T} {L} üstü korner", [3.5,4.5,5.5], "{T} {L} altı korner");
+ou("Korner","corners","match", m=>add(m.cf,m.ca), [7.5,8.5,9.5,10.5,11.5,12.5], "Toplam {L} üstü korner", [8.5,9.5,10.5,11.5], "Toplam {L} altı korner");
+ou("Kart","tcards","team", m=>m.kf, [0.5,1.5,2.5,3.5], "{T} {L} üstü kart", [1.5,2.5], "{T} {L} altı kart");
+ou("Kart","cards","match", m=>add(m.kf,m.ka), [2.5,3.5,4.5,5.5,6.5], "Toplam {L} üstü kart", [3.5,4.5,5.5], "Toplam {L} altı kart");
+ou("Şut","tsot","team", m=>m.tf, [1.5,2.5,3.5,4.5,5.5,6.5,7.5], "{T} {L} üstü isabetli şut");
+ou("Şut","tshots","team", m=>m.sf, [6.5,8.5,10.5,12.5,14.5,16.5], "{T} {L} üstü şut");
+ou("Şut","sot","match", m=>add(m.tf,m.ta), [5.5,6.5,7.5,8.5,9.5,10.5,11.5], "Maç {L} üstü isabetli şut");
+ou("Şut","shots","match", m=>add(m.sf,m.sa), [18.5,20.5,22.5,24.5,26.5,28.5], "Maç {L} üstü şut", [22.5,24.5,26.5], "Maç {L} altı şut");
+const CATS = ["Gol","Sonuç","Korner","Kart","Şut"];
+
+function evalMk(mk, g, role){
+  if (mk.scope === "result") {
+    const o = role === "home" ? {W:"H",D:"D",L:"A"}[g.res] : {W:"A",D:"D",L:"H"}[g.res];
+    return [o, mk.outcomes.includes(o)];
+  }
+  if (mk.kind === "yes") { const v = mk.yes(g); return [v ? 1 : 0, !!v]; }
+  const v = mk.stat(g);
+  if (v == null) return [null, null];
+  return [v, mk.kind === "over" ? v > mk.line : v < mk.line];
+}
+function side(mk, team, role, games){
+  const strip = [], values = [];
+  for (const g of games) { const [v, h] = evalMk(mk, g, role); values.push(v); strip.push(h == null ? null : (h ? 1 : 0)); }
+  const valid = strip.filter(h => h != null);
+  if (valid.length < Math.max(3, Math.floor(games.length / 2))) return null;
+  const hits = valid.reduce((a, b) => a + b, 0);
+  const nums = values.filter(v => typeof v === "number");
+  return { team, role, hits, total: valid.length, rate: hits / valid.length, strip, values,
+           avg: nums.length && mk.scope !== "result" && mk.kind !== "yes" ? Math.round(nums.reduce((a,b)=>a+b,0) / nums.length * 100) / 100 : null };
+}
+function mkLeg(mk, home, away, sides, subject){
+  const rates = sides.map(s => s.rate), sfx = subject ? "@" + subject : "";
+  return { id: mk.id + sfx, cat: mk.cat, family: mk.family + sfx, kind: mk.kind, line: mk.line, subject,
+           label: mk.label.replace("{T}", subject || "").replace("{H}", home).replace("{A}", away), sides,
+           rate: rates.reduce((a,b)=>a+b,0) / rates.length, min_rate: Math.min(...rates), n_hits: sides.reduce((a,s)=>a+s.hits,0) };
+}
+function markStrongest(legs, thr, fx){
+  // Her ailede eşiği geçen çizgiler arasından: önce iddaa'da oranı olanlar, sonra en zor çizgi
+  const best = {};
+  for (const l of legs) {
+    l.strongest = false;
+    if (l.min_rate < thr) continue;
+    l._odd = fx ? !!legOdd(fx, l) : false;
+    const c = best[l.family];
+    if (!c || (l._odd && !c._odd)) { best[l.family] = l; continue; }
+    if (c._odd && !l._odd) continue;
+    if (l.kind === "yes" || (l.kind === "over" && l.line > c.line) || (l.kind === "under" && l.line < c.line)) best[l.family] = l;
+  }
+  Object.values(best).forEach(l => l.strongest = true);
+}
+function evaluate(home, away, n, split, thr, fx){
+  const hg = teamGames(home, n, split ? "home" : null), ag = teamGames(away, n, split ? "away" : null), legs = [];
+  for (const mk of MARKETS) {
+    if (mk.scope === "team") {
+      for (const [t, r, g] of [[home, "home", hg], [away, "away", ag]]) { const s = side(mk, t, r, g); if (s) legs.push(mkLeg(mk, home, away, [s], t)); }
+    } else {
+      const a = side(mk, home, "home", hg), b = side(mk, away, "away", ag);
+      if (a && b) legs.push(mkLeg(mk, home, away, [a, b], null));
+    }
+  }
+  markStrongest(legs, thr, fx);
+  legs.sort((x, y) => y.rate - x.rate || y.min_rate - x.min_rate || y.n_hits - x.n_hits);
+  const pub = gs => gs.map(g => ({ date: g.date, opp: g.opp, venue: g.venue, score: `${g.gf}-${g.ga}`, res: g.res, lg: g.lg }));
+  return { home, away, games: { home: pub(hg), away: pub(ag) }, legs };
+}
+const api = async u => {
+  const d = await loadDB(), url = new URL(u, "http://x"), q = k => url.searchParams.get(k), p = url.pathname;
+  if (p === "/api/status") return { updated_at: d.updated_at, matches: d.matches.length, fixtures: d.fx.length, status: d.status, leagues: d.leagues };
+  if (p === "/api/days") { const c = {}; d.fx.forEach(f => { const k = f.kickoff.slice(0,10); c[k] = (c[k]||0) + 1; });
+    return { total: d.fx.length, days: Object.keys(c).sort().map(k => ({ date: k, count: c[k] })) }; }
+  if (p === "/api/tips") {
+    const day = q("day"), n = +q("n"), thr = +q("min_rate"), tips = [], categories = Object.fromEntries(CATS.map(c => [c, 0]));
+    for (const fx of d.fx) {
+      if (day !== "all" && fx.kickoff.slice(0,10) !== day) continue;
+      for (const l of evaluate(fx.home, fx.away, n, false, thr, fx).legs) if (l.strongest) { tips.push({ fixture: fx, ...l }); categories[l.cat]++; }
+    }
+    tips.sort((a, b) => b.min_rate - a.min_rate || b.rate - a.rate || b.n_hits - a.n_hits || a.fixture.kickoff.localeCompare(b.fixture.kickoff));
+    return { count: tips.length, categories, tips };
+  }
+  const m = p.match(/^\/api\/match\/(\d+)/);
+  if (m) { const fx = d.fxAll.find(f => f.id === +m[1]); if (!fx) throw new Error("Maç bulunamadı");
+    return { fixture: fx, ...evaluate(fx.home, fx.away, +q("n"), q("venue") === "split", +q("min_rate"), fx) }; }
+  throw new Error("bilinmeyen istek");
+};
+
+const state = { day: "all", cat: "Tümü", page: 0, minRate: 0.8, n: 10,
+                m: { n: 10, venue: "overall", tab: "Güçlü", min: 0.7 }, slip: {} };
+
+async function loadStatus(){
+  const s = await api("/api/status");
+  const t = new Date(s.updated_at);
+  $("#status").textContent = `Son güncelleme: ${t.toLocaleDateString("tr-TR")} ${t.toLocaleTimeString("tr-TR",{hour:"2-digit",minute:"2-digit"})} · ${s.matches} maç · ${s.fixtures} fikstür`;
+  $("#foot").innerHTML = `<details><summary>Veri durumu (lig bazında)</summary><table><tr><th>Lig</th><th>Kayıtlı maç</th><th>Son maç tarihi</th></tr>${
+    Object.keys(s.leagues).map(k => `<tr><td>${esc(s.leagues[k])}</td><td>${s.status[k]?.n ?? 0}</td><td>${s.status[k]?.last ? s.status[k].last.split("-").reverse().join(".") : "veri yok"}</td></tr>`).join("")
+  }</table></details><p class="note">Kaynak: ESPN · lig, kupa ve milli maçlar · kart = sarı + kırmızı · kupa skorlarına uzatmalar dahil olabilir · geçmiş isabet oranı gelecek sonucu garanti etmez.</p>`;
+}
+
+/* ------------------------------ LİSTE SAYFASI ------------------------------ */
+async function renderList(){
+  const app = $("#app");
+  app.innerHTML = `<div class="empty">Yükleniyor...</div>`;
+  const [days, data] = await Promise.all([
+    api("/api/days"),
+    api(`/api/tips?day=${state.day}&n=${state.n}&min_rate=${state.minRate}`)
+  ]);
+  const tips = state.cat === "Tümü" ? data.tips : data.tips.filter(t => t.cat === state.cat);
+  const per = 10, pages = Math.max(1, Math.ceil(tips.length / per));
+  state.page = Math.min(state.page, pages - 1);
+  const slice = tips.slice(state.page * per, state.page * per + per);
+
+  app.innerHTML = `
+    <div class="tabs" id="days">
+      <button class="tab ${state.day==="all"?"on":""}" data-d="all">Yaklaşan<span>${days.total}</span></button>
+      ${days.days.map(d => `<button class="tab ${state.day===d.date?"on":""}" data-d="${d.date}">${dayLabel(d.date)}<span>${d.count}</span></button>`).join("")}
+    </div>
+    <h1>Bet builder ipuçları</h1>
+    <p class="sub">Her takımın son ${state.n} maçında en sık tutan ayaklar · her market ailesinde eşiği geçen en zor çizgi</p>
+    <div class="chips" id="cats">
+      ${["Tümü", ...Object.keys(data.categories)].map(c => `<button class="chip ${state.cat===c?"on":""}" data-c="${c}">${c}<span>${c==="Tümü"?data.count:data.categories[c]}</span></button>`).join("")}
+      <span class="spacer"></span>
+      <select id="n">${[5,10,20].map(v=>`<option value="${v}" ${state.n==v?"selected":""}>Son ${v}</option>`).join("")}</select>
+      <select id="min">${[1,0.9,0.8,0.7].map(v=>`<option value="${v}" ${state.minRate==v?"selected":""}>En az %${v*100}</option>`).join("")}</select>
+    </div>
+    <div class="list">
+      ${slice.length ? slice.map(t => `
+        <a class="row" href="#/match/${t.fixture.id}">
+          <div class="pair">${logo(t.fixture.home)}${logo(t.fixture.away)}</div>
+          <div style="flex:1;min-width:0">
+            <div class="t">${esc(t.label)}</div>
+            <div class="m">${esc(t.fixture.home)} - ${esc(t.fixture.away)} · ${when(t.fixture.kickoff)} · ${esc(t.fixture.league)}</div>
+          </div>
+          <div class="avg">${t.sides.filter(s=>s.avg!==null).map(s=>`ort. ${s.avg}`).join(" · ")}</div>
+          ${legOddTag(t.fixture, t)}
+          <span class="badge ${badgeCls(t.min_rate)}">${t.sides.map(s=>`${s.hits}/${s.total}`).join(" · ")}</span>
+        </a>`).join("") : `<div class="empty">Bu filtrelerle ipucu yok.</div>`}
+      <div class="pager">
+        <span>${tips.length ? `${state.page*per+1}–${Math.min(tips.length,(state.page+1)*per)} / ${tips.length}` : ""}</span>
+        <span><button class="btn" id="prev">‹</button> <button class="btn" id="next">›</button></span>
+      </div>
+    </div>`;
+  app.querySelectorAll("#days .tab").forEach(b => b.onclick = () => { state.day = b.dataset.d; state.page = 0; renderList(); });
+  app.querySelectorAll("#cats .chip").forEach(b => b.onclick = () => { state.cat = b.dataset.c; state.page = 0; renderList(); });
+  $("#n").onchange = e => { state.n = +e.target.value; renderList(); };
+  $("#min").onchange = e => { state.minRate = +e.target.value; renderList(); };
+  $("#prev").onclick = () => { if (state.page > 0) { state.page--; renderList(); } };
+  $("#next").onclick = () => { if (state.page < pages - 1) { state.page++; renderList(); } };
+}
+
+/* ------------------------------ MAÇ SAYFASI ------------------------------ */
+let M = null;
+async function renderMatch(id){
+  const app = $("#app");
+  app.innerHTML = `<div class="empty">Yükleniyor...</div>`;
+  M = await api(`/api/match/${id}?n=${state.m.n}&venue=${state.m.venue}&min_rate=${state.m.min}`);
+  if (!state.slip[id]) state.slip[id] = new Set();
+  drawMatch(id);
+}
+
+function drawMatch(id){
+  const s = state.m, fx = M.fixture;
+  const cats = ["Güçlü","Tümü","Gol","Sonuç","Korner","Kart","Şut"];
+  const count = c => c==="Güçlü" ? M.legs.filter(l=>l.strongest).length : c==="Tümü" ? M.legs.length : M.legs.filter(l=>l.cat===c).length;
+  let legs = s.tab==="Güçlü" ? M.legs.filter(l=>l.strongest) : s.tab==="Tümü" ? M.legs : M.legs.filter(l=>l.cat===s.tab);
+
+  $("#app").innerHTML = `
+    <div class="crumb"><a href="#/">Bet Builder</a> / ${esc(fx.league)} / ${esc(fx.home)} - ${esc(fx.away)}</div>
+    <div class="mhead"><span class="mlogos">${logo(fx.home)}</span><h1>${esc(fx.home)} - ${esc(fx.away)}</h1><span class="mlogos">${logo(fx.away)}</span><span class="when">${esc(fx.league)} · ${when(fx.kickoff)}</span></div>
+    <div class="controls">
+      <span class="lbl">İSABET</span>
+      <div class="tabs">${[5,10,20].map(v=>`<button class="tab ${s.n==v?"on":""}" data-n="${v}">Son ${v}</button>`).join("")}</div>
+      <div class="tabs">
+        <button class="tab ${s.venue==="overall"?"on":""}" data-v="overall">Genel</button>
+        <button class="tab ${s.venue==="split"?"on":""}" data-v="split">Ev iç / Dep. dış</button>
+      </div>
+      <select id="mmin">${[0.9,0.8,0.7,0.6,0.5].map(v=>`<option value="${v}" ${s.min==v?"selected":""}>Güçlü çizgi eşiği %${v*100}</option>`).join("")}</select>
+    </div>
+    <div class="chips">${cats.map(c=>`<button class="chip ${s.tab===c?"on":""}" data-t="${c}">${c==="Güçlü"?"En güçlü":c}<span>${count(c)}</span></button>`).join("")}</div>
+    <div class="layout">
+      <div class="grid">${legs.map((l,i)=>card(l,i,id)).join("") || `<div class="empty">Ayak yok.</div>`}</div>
+      <aside class="slip" id="slip"></aside>
+    </div>`;
+  document.querySelectorAll("[data-n]").forEach(b=>b.onclick=()=>{s.n=+b.dataset.n; renderMatch(id);});
+  document.querySelectorAll("[data-v]").forEach(b=>b.onclick=()=>{s.venue=b.dataset.v; renderMatch(id);});
+  document.querySelectorAll("[data-t]").forEach(b=>b.onclick=()=>{s.tab=b.dataset.t; drawMatch(id);});
+  $("#mmin").onchange = e => { s.min = +e.target.value; renderMatch(id); };
+  document.querySelectorAll(".cbot").forEach(row=>row.onclick=()=>{ const c=row.closest(".card"); c.classList.toggle("open"); const b=c.querySelector(".more"); b.textContent=c.classList.contains("open")?"Gizle ▴":"Maçlar ▾"; });
+  document.querySelectorAll(".add").forEach(b=>b.onclick=()=>{
+    const set = state.slip[id]; set.has(b.dataset.id) ? set.delete(b.dataset.id) : set.add(b.dataset.id); drawMatch(id);
+  });
+  drawSlip(id);
+}
+
+function card(l, i, id){
+  const sub = l.subject ? `${l.cat} · ${esc(l.subject)}` : `${l.cat} · Maç`;
+  const avg = l.sides.filter(s=>s.avg!==null).map(s=>`${short(s.team)} ort. ${s.avg}`).join(" · ");
+  const on = state.slip[id].has(l.id);
+  const detail = l.sides.map(s => {
+    const games = M.games[s.role];
+    return `<table class="gtbl"><tr><th colspan="6">${logo(s.team)} ${esc(s.team)} — son ${games.length} maç · ${s.hits}/${s.total} tuttu</th></tr>
+      <tr><th>Tarih</th><th>Rakip</th><th></th><th>Skor</th><th>Değer</th><th></th></tr>
+      ${games.map((g,k)=>`<tr class="${s.strip[k]===1?"gok":s.strip[k]===0?"gno":""}"><td>${g.date.slice(8,10)}.${g.date.slice(5,7)}.${g.date.slice(2,4)}</td>
+        <td><span class="gopp">${logo(g.opp)}${esc(g.opp)}</span><small class="glg">${esc(g.lg||"")}</small></td>
+        <td class="gven">${g.venue==="H"?"İç":"Dış"}</td><td>${g.score??"–"}</td><td><b>${fmtVal(s.values[k])}</b></td>
+        <td class="${s.strip[k]===1?"ok":s.strip[k]===0?"no":""}">${s.strip[k]===1?"✓":s.strip[k]===0?"✗":"–"}</td></tr>`).join("")}
+    </table>`;
+  }).join("");
+  return `<div class="card ${l.strongest?"strong":""}">
+    <div class="ctop"><span class="rank">${i+1}</span>
+      <div><div class="t">${esc(l.label)}${dqTag(l)}</div><div class="s">${sub}${avg?` · ${avg}`:""}</div></div>
+      <span style="margin-left:auto">${legOddTag(M.fixture, l)}</span>
+      <button class="add ${on?"on":""}" style="margin-left:8px" data-id="${esc(l.id)}">${on?"✓":"+"}</button></div>
+    <div class="cbot">
+      ${l.sides.map(s=>`<span class="side">${logo(s.team)}<span class="badge ${badgeCls(s.rate)}">${s.hits}/${s.total}</span>${strip(s.strip)}</span>`).join("")}
+      <button class="more" title="Maç maç göster">Maçlar ▾</button>
+    </div>
+    <div class="detail">${detail}</div>
+  </div>`;
+}
+
+/* Kupon: seçilen ayakların aynı maçlarda BİRLİKTE kaç kez tuttuğu */
+function drawSlip(id){
+  const set = state.slip[id], picked = M.legs.filter(l => set.has(l.id));
+  if (!picked.length) {
+    $("#slip").innerHTML = `<h3>Bet Builder</h3><div class="hint">Bir ayağı eklemek için + işaretine bas.<br>Seçtiğin ayakların son maçlarda birlikte kaç kez tuttuğunu burada görürsün.</div>`;
+    return;
+  }
+  const combo = role => {
+    const ls = picked.filter(l => l.sides.some(s => s.role === role));
+    if (!ls.length) return null;
+    const len = M.games[role].length; let hit = 0, tot = 0;
+    for (let k = 0; k < len; k++) {
+      const vals = ls.map(l => l.sides.find(s => s.role === role).strip[k]);
+      if (vals.some(v => v === null || v === undefined)) continue;
+      tot++; if (vals.every(v => v === 1)) hit++;
+    }
+    return { hit, tot, n: ls.length };
+  };
+  const rows = [["home", M.home], ["away", M.away]].map(([r, t]) => {
+    const c = combo(r); if (!c) return "";
+    return `<div class="lineitem"><span>${esc(t)} maçlarında (${c.n} ayak)</span><span class="badge ${badgeCls(c.tot ? c.hit/c.tot : 0)}">${c.hit}/${c.tot}</span></div>`;
+  }).join("");
+  $("#slip").innerHTML = `<h3>Bet Builder · ${picked.length} ayak</h3>
+    ${picked.map(l=>`<div class="leg"><span>${esc(l.label)}</span><button data-rm="${esc(l.id)}">✕</button></div>`).join("")}
+    <div class="combo"><b>Hepsi birlikte tuttu</b>${rows}</div>
+    <div class="note">Her takım için, seçilen ayakların o takımın aynı maçında aynı anda tuttuğu maç sayısı.</div>`;
+  document.querySelectorAll("[data-rm]").forEach(b => b.onclick = () => { set.delete(b.dataset.rm); drawMatch(id); });
+}
+
+/* ============================== PROP SCREENER ============================== */
+const SSTATS = [
+  { key: "sf", against: "sa", name: "Şut", lines: [4.5,5.5,6.5,7.5,8.5,9.5,10.5,11.5,12.5,13.5,14.5,15.5,16.5,17.5,18.5,19.5,20.5] },
+  { key: "tf", against: "ta", name: "İsabetli şut", lines: [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5] },
+  { key: "cf", against: "ca", name: "Korner", lines: [0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8.5,9.5,10.5] },
+  { key: "gf", against: "ga", name: "Gol", lines: [0.5,1.5,2.5,3.5] },
+  { key: "kf", against: "ka", name: "Kart", lines: [0.5,1.5,2.5,3.5,4.5] },
+];
+const S = state.s = { dir: "both", n: 10, minHit: 0.7, sameLg: false, oppMin: 0, date: "any", leagues: null, q: "", market: "all", sort: "form", page: 0, onlyOdds: true, minOdd: 1.4, split: false, showMissing: false };
+const D = state.d = { open: false };
+
+function gamesFor(team, n, lg, venue){
+  let l = DB.byTeam[team] || [];
+  if (lg) l = l.filter(m => m[0] === lg);
+  if (venue === "home") l = l.filter(m => m[2] === team);
+  if (venue === "away") l = l.filter(m => m[3] === team);
+  return l.slice(0, n).map(m => ({ ...view(m, team), lg: m[0] }));
+}
+function hitOf(vals, line, dir){
+  let h = 0, t = 0;
+  for (const v of vals) { if (v == null) continue; t++; if (dir === "over" ? v > line : v < line) h++; }
+  return { h, t };
+}
+const enough = (t, n) => t >= Math.min(5, n);
+
+let _rowsKey = null, _rows = [];
+function buildRows(){
+  const thr = Math.max(S.minHit, 0.5), key = [S.n, S.sameLg, S.split, thr, DB.updated_at, DB.frKey].join("|");
+  if (key === _rowsKey) return _rows;
+  const rows = [];
+  for (const fx of DB.fx) {
+    const lg = S.sameLg ? fx.div : null;
+    for (const [team, opp, side] of [[fx.home, fx.away, "home"], [fx.away, fx.home, "away"]]) {
+      const tv_ = S.split ? side : null, ov_ = S.split ? (side === "home" ? "away" : "home") : null;
+      const tg = gamesFor(team, S.n, lg, tv_), og = gamesFor(opp, S.n, lg, ov_);
+      for (const st of SSTATS) {
+        const tv = tg.map(g => g[st.key]), ov = og.map(g => g[st.against]);
+        const nums = tv.filter(v => v != null), avg = nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : null;
+        const okey = TEAM_ODD_KEY[st.key] ? TEAM_ODD_KEY[st.key][side === "home" ? 0 : 1] : null;
+        const table = okey && fx.odds ? fx.odds[okey] : null;
+        const push = (dir, L, odd) => {
+          const r = hitOf(tv, L, dir); if (!enough(r.t, S.n)) return;
+          const o = hitOf(ov, L, dir);
+          const ok_ = okey ? `${okey}|${L}|${dir === "over" ? "o" : "u"}` : null;
+          rows.push({ fx, team, opp, side, st, dir, line: +L, fh: r.h, ft: r.t, form: r.h / r.t, miss: tv.length - r.t,
+                      open: ok_ && fx.open ? fx.open[ok_] || null : null,
+                      oh: o.h, ot: o.t, oform: enough(o.t, S.n) ? o.h / o.t : null, avg, odd: odd || null });
+        };
+        for (const dir of ["over", "under"]) {
+          const offered = table ? Object.keys(table).filter(L => table[L][dir === "over" ? 1 : 0] >= 1.02) : [];
+          if (offered.length) { offered.forEach(L => push(dir, L, table[L][dir === "over" ? 1 : 0])); continue; }
+          const ls = dir === "over" ? [...st.lines].reverse() : st.lines;      // oran yoksa: eşiği geçen en zor çizgi
+          for (const L of ls) { const r = hitOf(tv, L, dir); if (enough(r.t, S.n) && r.h / r.t >= thr) { push(dir, L, null); break; } }
+        }
+      }
+    }
+  }
+  _rowsKey = key; _rows = rows; return rows;
+}
+function dateOk(ko){
+  if (S.date === "any") return true;
+  const t = new Date(ko).getTime(), now = Date.now();
+  if (S.date === "today") return ko.slice(0, 10) === todayStr();
+  const h = { "24h": 24, "2d": 48, "3d": 72, "7d": 168 }[S.date];
+  return t <= now + h * 3600e3;
+}
+function filtered(){
+  const q = S.q.trim().toLowerCase();
+  return buildRows().filter(r =>
+    (S.dir === "both" || r.dir === S.dir) &&
+    r.form >= S.minHit &&
+    (!S.onlyOdds || r.odd) && (!r.odd || r.odd >= S.minOdd) &&
+    (S.showMissing || !r.miss) &&
+    (S.oppMin === 0 || (r.oform != null && r.oform >= S.oppMin)) &&
+    dateOk(r.fx.kickoff) &&
+    (!S.leagues || S.leagues.has(r.fx.div)) &&
+    (!q || (r.fx.home + " " + r.fx.away + " " + r.fx.league).toLowerCase().includes(q)));
+}
+const pctCls = p => p == null ? "p-n" : p >= 0.8 ? "p-g" : p >= 0.6 ? "p-y" : "p-n";
+const pctTxt = p => p == null ? "–" : Math.round(p * 100) + "%";
+const dirTxt = d => d === "over" ? "Üst" : "Alt";
+const edge = r => r.odd ? r.form - 1 / r.odd : null;
+const edgeTxt = e => e == null ? "–" : (e > 0 ? "+" : "") + Math.round(e * 100);
+
+async function renderScreener(){
+  await loadDB();
+  const app = $("#app");
+  const all = filtered();
+  const byMk = { all: all.length }; SSTATS.forEach(s => byMk[s.key] = all.filter(r => r.st.key === s.key).length);
+  let rows = S.market === "all" ? all : all.filter(r => r.st.key === S.market);
+  rows = [...rows].sort(S.sort === "opp" ? (a, b) => (b.oform ?? -1) - (a.oform ?? -1) || b.form - a.form
+                      : S.sort === "edge" ? (a, b) => (edge(b) ?? -9) - (edge(a) ?? -9) || b.form - a.form
+                      : S.sort === "time" ? (a, b) => a.fx.kickoff.localeCompare(b.fx.kickoff) || b.form - a.form
+                      : (a, b) => b.form - a.form || (b.oform ?? -1) - (a.oform ?? -1) || b.ft - a.ft);
+  const per = 25, pages = Math.max(1, Math.ceil(rows.length / per));
+  S.page = Math.min(S.page, pages - 1);
+  const slice = rows.slice(S.page * per, S.page * per + per);
+  const lgCount = {}; DB.fx.forEach(f => lgCount[f.div] = (lgCount[f.div] || 0) + 1);
+  const lgs = Object.keys(lgCount).sort((a, b) => lgCount[b] - lgCount[a]);
+  const seg = (name, val, opts) => `<div class="seg">${opts.map(([v, t]) => `<button data-${name}="${v}" class="${String(val) === String(v) ? "on" : ""}">${t}</button>`).join("")}</div>`;
+
+  app.innerHTML = `
+  <h1 style="margin-top:4px">Prop Screener</h1><button class="btn mobonly" id="ftoggle">Filtreler ▾</button>
+  <p class="sub">Takım marketleri: takımın formu, rakibin aynı markette izin verdiği oran</p>
+  <div class="scr">
+    <aside class="fpanel" id="fpanel">
+      <div class="fbox"><h4>İsabet oranı</h4>
+        <div class="flbl">Üst / Alt</div>${seg("dir", S.dir, [["both", "İkisi"], ["over", "Üst"], ["under", "Alt"]])}
+        <div class="flbl">Pencere</div>${seg("n", S.n, [[5, "L5"], [10, "L10"], [15, "L15"]])}
+        <div class="flbl">İsabet L${S.n} <span>en az %${Math.round(S.minHit * 100)}</span></div>
+        <input type="range" id="minHit" min="50" max="100" step="10" value="${S.minHit * 100}">
+        <div class="flbl">Hangi maçlardan</div>${seg("lg", S.sameLg, [[true, "Aynı lig"], [false, "Tüm müsabakalar"]])}
+        <div class="flbl">Saha</div>${seg("sp", S.split, [[false, "Genel"], [true, "Ev iç / Dep. dış"]])}
+        <label class="chkrow"><input type="checkbox" id="showMissing" ${S.showMissing ? "checked" : ""}> Verisi eksik ayakları da göster</label>
+      </div>
+      <div class="fbox"><h4>iddaa oranı</h4>
+        <label class="chkrow"><input type="checkbox" id="onlyOdds" ${S.onlyOdds ? "checked" : ""}> Sadece iddaa'da oranı olanlar</label>
+        <div class="flbl">En düşük oran <span>${S.minOdd.toFixed(2)}</span></div>
+        ${seg("mo", S.minOdd, [[1, "Hepsi"], [1.2, "1.20"], [1.4, "1.40"], [1.6, "1.60"], [1.8, "1.80"], [2, "2.00"]])}
+        <p class="note" style="margin:8px 0 0">${DB.fx.filter(f => f.odds).length} / ${DB.fx.length} maçın iddaa oranı var</p>
+      </div>
+      <div class="fbox"><h4>Rakip formu</h4>
+        <div class="flbl">Rakibin izin verme oranı <span>en az %${Math.round(S.oppMin * 100)}</span></div>
+        <input type="range" id="oppMin" min="0" max="100" step="10" value="${S.oppMin * 100}">
+      </div>
+      <div class="fbox"><h4>Tarih ve ligler</h4>
+        <div class="flbl">Maç tarihi</div>${seg("date", S.date, [["any", "Hepsi"], ["today", "Bugün"], ["24h", "24s"], ["2d", "2g"], ["3d", "3g"], ["7d", "7g"]])}
+        <div class="flbl">Ligler <span>${S.leagues ? S.leagues.size : lgs.length} / ${lgs.length}</span></div>
+        <div style="display:flex;gap:6px"><button class="btn" id="lgAll" style="flex:1">Tümü</button><button class="btn" id="lgNone" style="flex:1">Temizle</button></div>
+        <div class="lglist">${lgs.map(l => `<label><input type="checkbox" data-lgc="${esc(l)}" ${!S.leagues || S.leagues.has(l) ? "checked" : ""}>${esc(l)}<span>${lgCount[l]}</span></label>`).join("")}</div>
+      </div>
+    </aside>
+    <section>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <input class="search" id="q" placeholder="Takım, maç ya da lig ara" value="${esc(S.q)}" style="flex:1;min-width:200px">
+        <select id="sort"><option value="form" ${S.sort === "form" ? "selected" : ""}>L${S.n} isabet, en yüksek</option><option value="opp" ${S.sort === "opp" ? "selected" : ""}>Rakip formu, en yüksek</option><option value="edge" ${S.sort === "edge" ? "selected" : ""}>Değer (form − iddaa olasılığı)</option><option value="time" ${S.sort === "time" ? "selected" : ""}>Başlama saati</option></select>
+      </div>
+      <div class="mtabs">${[["all", "Tüm marketler"], ...SSTATS.map(s => [s.key, s.name])].map(([k, t]) => `<button data-mk="${k}" class="${S.market === k ? "on" : ""}">${t}<span>${byMk[k]}</span></button>`).join("")}</div>
+      <table class="stbl scrtbl">
+        <tr><th>TAKIM</th><th>MARKET</th><th style="text-align:center">İDDAA</th><th style="text-align:center">FORM L${S.n}</th><th style="text-align:center">RAKİP FORMU L${S.n}</th><th style="text-align:center" title="Form yüzdesi eksi iddaa oranının ima ettiği olasılık (puan)">DEĞER</th><th></th></tr>
+        ${slice.map((r, i) => `<tr class="r" data-i="${S.page * per + i}">
+          <td><div class="tcell">${logo(r.team)}<div><div class="tname">${esc(r.team)}</div>
+            <div class="vs"><span class="chip">${logo(r.fx.home)}<${r.side === "home" ? "b" : "span"}>${esc(r.fx.home)}</${r.side === "home" ? "b" : "span"}></span>v<span class="chip">${logo(r.fx.away)}<${r.side === "away" ? "b" : "span"}>${esc(r.fx.away)}</${r.side === "away" ? "b" : "span"}></span>${when(r.fx.kickoff)} · ${esc(r.fx.league)}</div></div></div></td>
+          <td class="mk"><b>${r.st.name}${r.miss ? `<span class="dq" title="Son ${S.n} maçın ${r.miss} tanesinde veri yok">⚠ ${r.miss}</span>` : ""}</b><span>${dirTxt(r.dir)} ${r.line}${r.avg != null ? ` · ort. ${r.avg.toFixed(1)}` : ""}</span></td>
+          <td class="oddcell">${r.odd ? oddTag(r.odd, r.open) + `<small>ima %${Math.round(100 / r.odd)}</small>` : `<span style="color:var(--muted)">–</span>`}</td>
+          <td class="pct ${pctCls(r.form)}" data-l="Form L${S.n}">${pctTxt(r.form)}<small>${r.fh}/${r.ft}</small></td>
+          <td class="pct ${pctCls(r.oform)}" data-l="Rakip formu">${pctTxt(r.oform)}<small>${r.ot ? r.oh + "/" + r.ot : "veri az"}</small></td>
+          <td class="val ${edge(r) == null ? "v-0" : edge(r) > 0 ? "v-pos" : "v-neg"}" data-l="Değer">${edgeTxt(edge(r))}<small>${edge(r) == null ? "" : "puan"}</small></td>
+          <td><button class="cbtn" title="Grafik">▥</button></td></tr>`).join("") || `<tr><td colspan="7" class="empty">Bu filtrelerle sonuç yok.${S.onlyOdds ? " \"Sadece iddaa'da oranı olanlar\" kutusunu kaldırmayı dene." : ""}</td></tr>`}
+      </table>
+      <div class="pager"><span>${rows.length ? `${S.page * per + 1}–${Math.min(rows.length, (S.page + 1) * per)} / ${rows.length}` : ""}</span>
+        <span><button class="btn" id="sprev">‹</button> <button class="btn" id="snext">›</button></span></div>
+      <p class="note">iddaa'nın sunduğu çizgiler oranıyla gösterilir; iddaa'da olmayan marketlerde seçilen isabet eşiğini geçen en zor çizgi gösterilir. Değer = form yüzdesi − iddaa oranının ima ettiği olasılık (örn. form %90, oran 1.50 → ima %67 → +23). Rakip formu: rakibin son ${S.n} maçında, rakiplerinin aynı çizgiyi ${"geçme/geçmeme"} oranı.</p>
+    </section>
+  </div>`;
+  const again = () => renderScreener();
+  $("#ftoggle").onclick = () => { const p = $("#fpanel"); p.classList.toggle("open"); window._fopen = p.classList.contains("open"); $("#ftoggle").textContent = window._fopen ? "Filtreleri gizle ▴" : "Filtreler ▾"; };
+  if (window._fopen) { $("#fpanel").classList.add("open"); $("#ftoggle").textContent = "Filtreleri gizle ▴"; }
+  app.querySelectorAll("[data-dir]").forEach(b => b.onclick = () => { S.dir = b.dataset.dir; S.page = 0; again(); });
+  app.querySelectorAll("[data-n]").forEach(b => b.onclick = () => { S.n = +b.dataset.n; S.page = 0; again(); });
+  app.querySelectorAll("[data-lg]").forEach(b => b.onclick = () => { S.sameLg = b.dataset.lg === "true"; S.page = 0; again(); });
+  app.querySelectorAll("[data-sp]").forEach(b => b.onclick = () => { S.split = b.dataset.sp === "true"; S.page = 0; again(); });
+  $("#showMissing").onchange = e => { S.showMissing = e.target.checked; S.page = 0; again(); };
+  app.querySelectorAll("[data-date]").forEach(b => b.onclick = () => { S.date = b.dataset.date; S.page = 0; again(); });
+  app.querySelectorAll("[data-mk]").forEach(b => b.onclick = () => { S.market = b.dataset.mk; S.page = 0; again(); });
+  app.querySelectorAll("[data-mo]").forEach(b => b.onclick = () => { S.minOdd = +b.dataset.mo; S.page = 0; again(); });
+  $("#onlyOdds").onchange = e => { S.onlyOdds = e.target.checked; S.page = 0; again(); };
+  $("#minHit").onchange = e => { S.minHit = +e.target.value / 100; S.page = 0; again(); };
+  $("#oppMin").onchange = e => { S.oppMin = +e.target.value / 100; S.page = 0; again(); };
+  $("#sort").onchange = e => { S.sort = e.target.value; again(); };
+  let qt; $("#q").oninput = e => { clearTimeout(qt); qt = setTimeout(() => { S.q = e.target.value; S.page = 0; again().then(() => { const q = $("#q"); q.focus(); q.setSelectionRange(q.value.length, q.value.length); }); }, 250); };
+  $("#lgAll").onclick = () => { S.leagues = null; S.page = 0; again(); };
+  $("#lgNone").onclick = () => { S.leagues = new Set(); S.page = 0; again(); };
+  app.querySelectorAll("[data-lgc]").forEach(c => c.onchange = () => {
+    if (!S.leagues) S.leagues = new Set(lgs);
+    c.checked ? S.leagues.add(c.dataset.lgc) : S.leagues.delete(c.dataset.lgc);
+    if (S.leagues.size === lgs.length) S.leagues = null;
+    S.page = 0; again();
+  });
+  $("#sprev").onclick = () => { if (S.page > 0) { S.page--; again(); window.scrollTo(0, 0); } };
+  $("#snext").onclick = () => { if (S.page < pages - 1) { S.page++; again(); window.scrollTo(0, 0); } };
+  app.querySelectorAll("tr.r").forEach(tr => tr.onclick = () => openDrawer(rows[+tr.dataset.i]));
+}
+
+/* ------------------------------ GRAFİK PANELİ ------------------------------ */
+function openDrawer(r){
+  Object.assign(D, { open: true, r, who: "team", dir: r.dir, mode: "for", stat: r.st.key, line: r.line, n: S.n });
+  drawDrawer();
+}
+function closeDrawer(){ D.open = false; document.querySelector(".drawer")?.remove(); document.querySelector(".dshade")?.remove(); }
+function drawDrawer(){
+  closeDrawer(); D.open = true;
+  const r = D.r, st = SSTATS.find(s => s.key === D.stat);
+  const team = D.who === "team" ? r.team : r.opp, opp = D.who === "team" ? r.opp : r.team;
+  const vside = !S.split ? null : (D.who === "team" ? r.side : (r.side === "home" ? "away" : "home"));
+  const games = gamesFor(team, D.n, S.sameLg ? r.fx.div : null, vside);
+  const valOf = g => {
+    const f = g[st.key], a = g[st.against];
+    return D.mode === "for" ? f : D.mode === "against" ? a : (f == null || a == null ? null : f + a);
+  };
+  const vals = games.map(valOf);
+  const avg = k => { const v = games.map(g => g[k]).filter(x => x != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : "–"; };
+  const tot = (() => { const v = games.map(g => g[st.key] == null || g[st.against] == null ? null : g[st.key] + g[st.against]).filter(x => x != null); return v.length ? (v.reduce((a, b) => a + b, 0) / v.length).toFixed(1) : "–"; })();
+  const hr = hitOf(vals, D.line, D.dir);
+  const modeTxt = { for: "Lehine", against: "Aleyhine", total: "Toplam" }[D.mode];
+
+  // ---- grafik (en yeni solda, örnekteki gibi)
+  const W = 600, H = 300, padL = 26, padB = 58, padT = 22, n = games.length;
+  const maxV = Math.max(D.line + 1, ...vals.filter(v => v != null), 1);
+  const yMax = Math.ceil(maxV / 2) * 2, sy = v => padT + (H - padT - padB) * (1 - v / yMax);
+  const right = 48, bw = n ? Math.min(46, (W - padL - right) / n * 0.72) : 0, step = n ? (W - padL - right) / n : 0;
+  let svg = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(team)} son ${n} maç ${st.name}">`;
+  for (let v = 0; v <= yMax; v += Math.max(1, Math.round(yMax / 4))) svg += `<text x="${padL - 8}" y="${sy(v) + 4}" fill="#8a919c" font-size="11" text-anchor="end">${v}</text><line x1="${padL}" x2="${W - 6}" y1="${sy(v)}" y2="${sy(v)}" stroke="#20252c"/>`;
+  games.forEach((g, i) => {
+    const v = vals[i], x = padL + step * i + (step - bw) / 2, hit = v == null ? null : (D.dir === "over" ? v > D.line : v < D.line);
+    const col = hit == null ? "#3a3f47" : hit ? "#2fbf71" : "#a7333d";
+    if (v != null) {
+      const y = sy(v), hh = Math.max(2, sy(0) - y);
+      svg += `<rect x="${x}" y="${sy(0) - hh}" width="${bw}" height="${hh}" rx="3" fill="${col}"><title>${g.date} ${g.venue === "H" ? "vs" : "@"} ${esc(g.opp)}: ${v}</title></rect>`;
+      svg += `<text x="${x + bw / 2}" y="${sy(0) - hh - 5}" fill="#e8eaed" font-size="12" font-weight="700" text-anchor="middle">${v}</text>`;
+    } else svg += `<text x="${x + bw / 2}" y="${sy(0) - 5}" fill="#8a919c" font-size="11" text-anchor="middle">–</text>`;
+    const lp = DB.logos[g.opp];
+    svg += `<text x="${x + bw / 2}" y="${sy(0) + 19}" fill="#8a919c" font-size="9" text-anchor="middle">${initials(g.opp)}</text>`;
+    if (lp) svg += `<rect x="${x + bw / 2 - 10}" y="${sy(0) + 5}" width="20" height="20" fill="#13161b" class="lgbg"/><image href="https://a.espncdn.com${lp}" x="${x + bw / 2 - 9}" y="${sy(0) + 6}" width="18" height="18" onerror="this.previousElementSibling.remove();this.remove()"><title>${esc(g.opp)}</title></image>`;
+    svg += `<text x="${x + bw / 2}" y="${sy(0) + 38}" fill="#c9cdd3" font-size="10.5" text-anchor="middle">${g.date.slice(8, 10)}.${g.date.slice(5, 7)}</text>`;
+    svg += `<text x="${x + bw / 2}" y="${sy(0) + 51}" fill="#8a919c" font-size="9.5" text-anchor="middle">${g.venue === "H" ? "İç" : "Dış"}</text>`;
+  });
+  svg += `<line x1="${padL}" x2="${W - right + 4}" y1="${sy(D.line)}" y2="${sy(D.line)}" stroke="#c9cdd3" stroke-dasharray="4 4"/><rect x="${W - 38}" y="${sy(D.line) - 10}" width="34" height="20" rx="5" fill="#2a2f37"/><text x="${W - 21}" y="${sy(D.line) + 4}" fill="#e8eaed" font-size="11" text-anchor="middle">${D.line}</text></svg>`;
+
+  const seg = (name, val, opts) => `<div class="seg">${opts.map(([v, t]) => `<button data-${name}="${v}" class="${val === v ? "on" : ""}">${t}</button>`).join("")}</div>`;
+  const shade = document.createElement("div"); shade.className = "dshade"; shade.onclick = closeDrawer;
+  const el = document.createElement("div"); el.className = "drawer";
+  el.innerHTML = `
+    <div class="dhead">${logo(r.team)}<div><h3>${esc(r.team)}</h3><div class="sub2">${r.st.name} ${dirTxt(r.dir).toLowerCase()} ${r.line} · vs ${esc(r.opp)} · ${when(r.fx.kickoff)}</div></div><span style="margin-left:auto">${oddTag(r.odd, r.open)}</span><button class="x" style="margin-left:10px" title="Kapat">✕</button></div>
+    <div class="dteams"><button data-who="team" class="${D.who === "team" ? "on" : ""}">${logo(r.team)}${esc(r.team)}</button><button data-who="opp" class="${D.who === "opp" ? "on" : ""}">${logo(r.opp)}${esc(r.opp)}</button></div>
+    <div class="drow">${seg("ddir", D.dir, [["over", "Üst"], ["under", "Alt"]])}${seg("mode", D.mode, [["for", "Lehine"], ["against", "Aleyhine"], ["total", "Toplam"]])}</div>
+    <div class="stabs">${SSTATS.map(s => `<button data-st="${s.key}" class="${D.stat === s.key ? "on" : ""}">${s.name}</button>`).join("")}</div>
+    <div class="dsum"><div style="flex-basis:100%;color:var(--text);font-weight:700;font-size:14px">${logo(team)} ${esc(team)} <span style="color:var(--muted);font-weight:500;font-size:12px">· ${st.name} · son ${games.length} maç · ${dirTxt(D.dir)} · ${modeTxt}</span></div>
+      <div>Ort. lehine<b>${avg(st.key)}</b></div><div>Ort. aleyhine<b>${avg(st.against)}</b></div><div>Ort. toplam<b>${tot}</b></div>
+      <div>İsabet<b class="${pctCls(hr.t ? hr.h / hr.t : null)}">${hr.t ? Math.round(hr.h / hr.t * 100) : 0}% (${hr.h}/${hr.t})</b></div></div>
+    <div class="chart">${games.length ? svg : `<div class="empty">Maç verisi yok.</div>`}</div>
+    <div class="ctrls">
+      <div class="stepper">Çizgi <button data-line="-1">−</button><b>${D.line}</b><button data-line="1">+</button></div>
+      <div class="stepper">Maç <button data-gn="-1">−</button><b>${D.n}</b><button data-gn="1">+</button></div>
+    </div>
+    <p class="note">Grafik kendi seçimlerini kullanır; sayıları listeden farklı olabilir. ${S.sameLg ? "Sadece aynı lig maçları." : "Tüm müsabakalar."} En yeni maç solda.</p>`;
+  document.body.append(shade, el);
+  el.querySelector(".x").onclick = closeDrawer;
+  el.querySelectorAll("[data-who]").forEach(b => b.onclick = () => { D.who = b.dataset.who; drawDrawer(); });
+  el.querySelectorAll("[data-ddir]").forEach(b => b.onclick = () => { D.dir = b.dataset.ddir; drawDrawer(); });
+  const autoLine = () => {
+    const s2 = SSTATS.find(s => s.key === D.stat);
+    const v = gamesFor(team, D.n, S.sameLg ? r.fx.div : null).map(g => {
+      const f = g[s2.key], a = g[s2.against];
+      return D.mode === "for" ? f : D.mode === "against" ? a : (f == null || a == null ? null : f + a);
+    }).filter(x => x != null);
+    D.line = v.length ? Math.floor(v.reduce((a, b) => a + b, 0) / v.length) + 0.5 : 0.5;
+  };
+  el.querySelectorAll("[data-mode]").forEach(b => b.onclick = () => { D.mode = b.dataset.mode; autoLine(); drawDrawer(); });
+  el.querySelectorAll("[data-st]").forEach(b => b.onclick = () => { D.stat = b.dataset.st; autoLine(); drawDrawer(); });
+  el.querySelectorAll("[data-line]").forEach(b => b.onclick = () => { D.line = Math.max(0.5, D.line + +b.dataset.line); drawDrawer(); });
+  el.querySelectorAll("[data-gn]").forEach(b => b.onclick = () => { D.n = Math.min(25, Math.max(3, D.n + 5 * +b.dataset.gn)); drawDrawer(); });
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape" && D.open) closeDrawer(); });
+
+/* ============================== DEĞERLİ ORANLAR ============================== */
+const V = state.v = { day: "all", cat: "Tümü", n: 10, minHit: 0.7, minVal: 0.05, minOdd: 1.3, fair: true, sort: "value", page: 0, split: false, showMissing: false };
+let _vKey = null, _vRows = [];
+function valueRows(){
+  const key = [V.n, V.split, DB.updated_at, DB.frKey].join("|");
+  if (key === _vKey) return _vRows;
+  const rows = [];
+  for (const fx of DB.fx) {
+    if (!fx.odds) continue;
+    const res = evaluate(fx.home, fx.away, V.n, V.split, 0, fx);
+    for (const l of res.legs) {
+      const info = legOddFull(fx, l);
+      if (!info) continue;
+      const tot = l.sides.reduce((a, s) => a + s.total, 0);
+      const rate = tot ? l.n_hits / tot : 0;
+      rows.push({ fx, l, odd: info.odd, open: info.open, pRaw: 1 / info.odd, pFair: info.p, fairOk: info.fair, rate, miss: missingOf(l) });
+    }
+  }
+  _vKey = key; _vRows = rows; return rows;
+}
+async function renderValue(){
+  await loadDB();
+  const app = $("#app");
+  const prob = r => V.fair ? r.pFair : r.pRaw;
+  const val = r => r.rate - prob(r);
+  const days = {}; DB.fx.filter(f => f.odds).forEach(f => { const k = f.kickoff.slice(0, 10); days[k] = (days[k] || 0) + 1; });
+  const base = valueRows().filter(r => (V.day === "all" || r.fx.kickoff.slice(0, 10) === V.day) &&
+    r.rate >= V.minHit && val(r) >= V.minVal && r.odd >= V.minOdd && (V.showMissing || !r.miss));
+  const cats = Object.fromEntries(CATS.map(c => [c, 0])); base.forEach(r => cats[r.l.cat]++);
+  let rows = V.cat === "Tümü" ? base : base.filter(r => r.l.cat === V.cat);
+  rows = [...rows].sort(V.sort === "hit" ? (a, b) => b.rate - a.rate || val(b) - val(a)
+                      : V.sort === "odd" ? (a, b) => b.odd - a.odd || val(b) - val(a)
+                      : V.sort === "time" ? (a, b) => a.fx.kickoff.localeCompare(b.fx.kickoff) || val(b) - val(a)
+                      : (a, b) => val(b) - val(a) || b.rate - a.rate);
+  const per = 15, pages = Math.max(1, Math.ceil(rows.length / per));
+  V.page = Math.min(V.page, pages - 1);
+  const slice = rows.slice(V.page * per, V.page * per + per);
+  const seg = (name, cur, opts) => `<div class="seg" style="display:inline-flex">${opts.map(([v, t]) => `<button data-${name}="${v}" class="${String(cur) === String(v) ? "on" : ""}">${t}</button>`).join("")}</div>`;
+
+  app.innerHTML = `
+    <div class="tabs" id="vdays">
+      <button class="tab ${V.day === "all" ? "on" : ""}" data-d="all">Tümü<span>${Object.values(days).reduce((a, b) => a + b, 0)}</span></button>
+      ${Object.keys(days).sort().map(d => `<button class="tab ${V.day === d ? "on" : ""}" data-d="${d}">${dayLabel(d)}<span>${days[d]}</span></button>`).join("")}
+    </div>
+    <h1>Değerli oranlar</h1>
+    <p class="sub">Son ${V.n} maçtaki isabet oranı, iddaa oranının ima ettiği olasılıktan yüksek olan ayaklar</p>
+    <div class="chips" id="vcats">
+      ${["Tümü", ...CATS].map(c => `<button class="chip ${V.cat === c ? "on" : ""}" data-c="${c}">${c}<span>${c === "Tümü" ? base.length : cats[c]}</span></button>`).join("")}
+    </div>
+    <div class="controls" style="margin-top:0">
+      <span class="lbl">MAÇ</span>${seg("vn", V.n, [[5, "Son 5"], [10, "Son 10"], [20, "Son 20"]])}
+      <span class="lbl">SAHA</span>${seg("vs", V.split, [[false, "Genel"], [true, "Ev iç / Dep. dış"]])}
+      <span class="lbl">İSABET</span>${seg("vh", V.minHit, [[0.6, "%60+"], [0.7, "%70+"], [0.8, "%80+"], [0.9, "%90+"]])}
+      <span class="lbl">DEĞER</span>${seg("vv", V.minVal, [[0, "0+"], [0.05, "+5"], [0.1, "+10"], [0.2, "+20"]])}
+      <span class="lbl">ORAN</span>${seg("vo", V.minOdd, [[1, "Hepsi"], [1.3, "1.30+"], [1.5, "1.50+"], [1.8, "1.80+"]])}
+      <label class="chkrow" style="margin:0" title="iddaa'nın kâr payını çıkararak hesapla (iki tarafın da oranı olan marketlerde)"><input type="checkbox" id="vfair" ${V.fair ? "checked" : ""}> Marjsız olasılık</label>
+      <label class="chkrow" style="margin:0"><input type="checkbox" id="vmiss" ${V.showMissing ? "checked" : ""}> Verisi eksikleri göster</label>
+      <select id="vsort" style="margin-left:auto"><option value="value" ${V.sort === "value" ? "selected" : ""}>Değer, en yüksek</option><option value="hit" ${V.sort === "hit" ? "selected" : ""}>İsabet, en yüksek</option><option value="odd" ${V.sort === "odd" ? "selected" : ""}>Oran, en yüksek</option><option value="time" ${V.sort === "time" ? "selected" : ""}>Başlama saati</option></select>
+    </div>
+    <div class="list">
+      ${slice.length ? slice.map(r => { const v = val(r), p = prob(r); return `
+        <a class="row" href="#/match/${r.fx.id}">
+          <div class="pair">${logo(r.fx.home)}${logo(r.fx.away)}</div>
+          <div style="flex:1;min-width:0">
+            <div class="t">${esc(r.l.label)}${dqTag(r.l)}</div>
+            <div class="m">${esc(r.fx.home)} - ${esc(r.fx.away)} · ${when(r.fx.kickoff)} · ${esc(r.fx.league)}</div>
+          </div>
+          <span class="badge ${badgeCls(r.l.min_rate)}">${r.l.sides.map(s => `${s.hits}/${s.total}`).join(" · ")}</span>
+          <div class="oddcell" style="min-width:64px">${oddTag(r.odd, r.open)}<small>${V.fair && !r.fairOk ? "ima" : V.fair ? "marjsız" : "ima"} %${Math.round(p * 100)}</small></div>
+          <div class="val ${v > 0 ? "v-pos" : "v-neg"}" style="min-width:58px">${edgeTxt(v)}<small>puan</small></div>
+        </a>`; }).join("") : `<div class="empty">Bu filtrelerle değerli oran yok. Değer veya isabet eşiğini düşürmeyi dene.</div>`}
+      <div class="pager">
+        <span>${rows.length ? `${V.page * per + 1}–${Math.min(rows.length, (V.page + 1) * per)} / ${rows.length}` : ""}</span>
+        <span><button class="btn" id="vprev">‹</button> <button class="btn" id="vnext">›</button></span>
+      </div>
+    </div>
+    <p class="note">Değer = son ${V.n} maçtaki isabet oranı − iddaa oranının ima ettiği olasılık (puan). Maç marketlerinde iki takımın maçları birlikte sayılır. "Marjsız" seçiliyse iddaa'nın kâr payı, iki tarafın da oranı olan marketlerde (alt/üst, KG, maç sonucu) olasılıktan çıkarılır; tek taraflı marketlerde (şut 20+ gibi) ham olasılık kullanılır. ${V.n} maçlık geçmiş küçük bir örneklemdir; değer işareti tahmin değil, inceleme için bir başlangıç noktasıdır.</p>`;
+  const again = () => renderValue();
+  app.querySelectorAll("#vdays .tab").forEach(b => b.onclick = () => { V.day = b.dataset.d; V.page = 0; again(); });
+  app.querySelectorAll("#vcats .chip").forEach(b => b.onclick = () => { V.cat = b.dataset.c; V.page = 0; again(); });
+  app.querySelectorAll("[data-vn]").forEach(b => b.onclick = () => { V.n = +b.dataset.vn; V.page = 0; again(); });
+  app.querySelectorAll("[data-vh]").forEach(b => b.onclick = () => { V.minHit = +b.dataset.vh; V.page = 0; again(); });
+  app.querySelectorAll("[data-vv]").forEach(b => b.onclick = () => { V.minVal = +b.dataset.vv; V.page = 0; again(); });
+  app.querySelectorAll("[data-vo]").forEach(b => b.onclick = () => { V.minOdd = +b.dataset.vo; V.page = 0; again(); });
+  $("#vfair").onchange = e => { V.fair = e.target.checked; V.page = 0; again(); };
+  $("#vmiss").onchange = e => { V.showMissing = e.target.checked; V.page = 0; again(); };
+  app.querySelectorAll("[data-vs]").forEach(b => b.onclick = () => { V.split = b.dataset.vs === "true"; V.page = 0; again(); });
+  $("#vsort").onchange = e => { V.sort = e.target.value; V.page = 0; again(); };
+  $("#vprev").onclick = () => { if (V.page > 0) { V.page--; again(); window.scrollTo(0, 0); } };
+  $("#vnext").onclick = () => { if (V.page < pages - 1) { V.page++; again(); window.scrollTo(0, 0); } };
+}
+
+/* ============================== TAKİP ============================== */
+const TK = state.t = { days: 30, minVal: -9, minHit: 0, cat: "Tümü", odd: "all", page: 0 };
+let BOOK = null;
+async function repoJSON(path, ref){
+  const tok = getTok(), repo = getRepo().trim();
+  let r;
+  if (tok && !/^https?:/.test(repo)) r = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${ref}`, { cache: "no-store", headers: { Authorization: "Bearer " + tok, Accept: "application/vnd.github.raw+json" } });
+  else r = await fetch(dataUrl().replace(/data\.json$/, path) + "?t=" + Date.now(), { cache: "no-store" });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("Takip verisi okunamadı (" + r.status + ")");
+  return r.json();
+}
+const PK_CAT = { htg: "Gol", hg: "Gol", ag: "Gol", g: "Gol", btts: "Gol", hc: "Korner", ac: "Korner", c: "Korner", k: "Kart",
+                 hs: "Şut", as: "Şut", ts: "Şut", hsot: "Şut", asot: "Şut", tsot: "Şut", "1x2": "Sonuç", dc: "Sonuç" };
+function pickLabel(rec, p){
+  const ou = p.d === "o" ? "üstü" : "altı", h = rec.home, a = rec.away;
+  switch (p.k) {
+    case "hg": return `${h} ${p.l} ${ou} gol`; case "ag": return `${a} ${p.l} ${ou} gol`;
+    case "hc": return `${h} ${p.l} ${ou} korner`; case "ac": return `${a} ${p.l} ${ou} korner`;
+    case "hs": return `${h} ${p.l} üstü şut`; case "as": return `${a} ${p.l} üstü şut`;
+    case "hsot": return `${h} ${p.l} üstü isabetli şut`; case "asot": return `${a} ${p.l} üstü isabetli şut`;
+    case "htg": return `İY ${p.l} ${ou} gol`; case "g": return `${p.l} ${ou} gol`; case "c": return `Toplam ${p.l} ${ou} korner`; case "k": return `Toplam ${p.l} ${ou} kart`;
+    case "ts": return `Maç ${p.l} üstü şut`; case "tsot": return `Maç ${p.l} üstü isabetli şut`;
+    case "btts": return p.d === "y" ? "KG Var" : "KG Yok";
+    case "1x2": return p.d === "1" ? `${h} kazanır` : p.d === "2" ? `${a} kazanır` : "Beraberlik";
+    case "dc": return p.d === "1X" ? `${h} veya beraberlik` : p.d === "X2" ? `${a} veya beraberlik` : "Beraberlik olmaz";
+  }
+  return p.k;
+}
+function trackStats(rows){
+  const n = rows.length, w = rows.filter(r => r.r).length;
+  const sum = f => rows.reduce((a, r) => a + f(r), 0);
+  const profit = sum(r => r.r ? r.o - 1 : -1);
+  return { n, w, hit: n ? w / n : null, exp: n ? sum(r => r.p) / n : null, hist: n ? sum(r => r.rate) / n : null,
+           odd: n ? sum(r => r.o) / n : null, profit, roi: n ? profit / n : null };
+}
+const pct = x => x == null ? "–" : Math.round(x * 100) + "%";
+const sgn = x => x == null ? "–" : (x > 0 ? "+" : "") + (Math.round(x * 1000) / 10).toFixed(1);
+async function renderTrack(){
+  await loadDB();
+  const app = $("#app");
+  if (!BOOK) { app.innerHTML = `<div class="empty">Takip kayıtları yükleniyor...</div>`; BOOK = (await repoJSON("history/picks.json", "main")) || {}; }
+  const recs = Object.entries(BOOK).map(([id, r]) => ({ id, ...r }));
+  const settled = recs.filter(r => Array.isArray(r.res)), pending = recs.filter(r => !Array.isArray(r.res) && r.res !== "iptal");
+  const since = TK.days ? Date.now() - TK.days * 864e5 : 0;
+  const oddOk = o => TK.odd === "all" || (TK.odd === "lt15" ? o < 1.5 : TK.odd === "15_2" ? o >= 1.5 && o < 2 : o >= 2);
+  let rows = [];
+  for (const r of settled) {
+    if (Date.parse(r.ko) < since) continue;
+    for (const p of r.picks) {
+      if (p.r == null) continue;
+      const rate = p.h / p.t, row = { ...p, rec: r, rate, val: rate - p.p, cat: PK_CAT[p.k] || "Diğer", open: (r.open || {})[`${p.k}|${p.l}|${p.d}`] };
+      if (row.val < TK.minVal || rate < TK.minHit || !oddOk(p.o)) continue;
+      rows.push(row);
+    }
+  }
+  const catRows = TK.cat === "Tümü" ? rows : rows.filter(r => r.cat === TK.cat);
+  const all = trackStats(catRows);
+  const B = [["Değer < 0", -9, 0], ["0 – +5", 0, .05], ["+5 – +10", .05, .1], ["+10 – +20", .1, .2], ["+20 ve üstü", .2, 9]];
+  const byVal = B.map(([t, a, b]) => [t, trackStats(catRows.filter(r => r.val >= a && r.val < b))]);
+  const byCat = ["Gol", "Sonuç", "Korner", "Kart", "Şut"].map(c => [c, trackStats(rows.filter(r => r.cat === c))]);
+  const recent = [...catRows].sort((a, b) => b.rec.ko.localeCompare(a.rec.ko) || b.val - a.val);
+  const per = 25, pages = Math.max(1, Math.ceil(recent.length / per)); TK.page = Math.min(TK.page, pages - 1);
+  const seg = (name, cur, opts) => `<div class="seg" style="display:inline-flex">${opts.map(([v, t]) => `<button data-${name}="${v}" class="${String(cur) === String(v) ? "on" : ""}">${t}</button>`).join("")}</div>`;
+  const statRow = ([t, s]) => `<tr><td>${t}</td><td>${s.n}</td><td>${s.w}</td><td class="${s.hit != null && s.exp != null ? (s.hit >= s.exp ? "ok" : "no") : ""}"><b>${pct(s.hit)}</b></td><td>${pct(s.exp)}</td><td>${pct(s.hist)}</td><td>${s.odd ? s.odd.toFixed(2) : "–"}</td><td class="${s.roi > 0 ? "ok" : s.roi < 0 ? "no" : ""}"><b>${s.n ? sgn(s.roi) + "%" : "–"}</b></td><td>${s.n ? (s.profit > 0 ? "+" : "") + s.profit.toFixed(1) : "–"}</td></tr>`;
+  const head = `<tr><th></th><th>Ayak</th><th>Tuttu</th><th>Gerçekleşen</th><th title="iddaa oranının marjsız olasılığı">Oranın beklediği</th><th title="Son maçlardaki isabet oranı (seçim anında)">Geçmiş isabet</th><th>Ort. oran</th><th title="Her ayağa 1 birim, eşit bahis">Getiri</th><th>Net (birim)</th></tr>`;
+
+  app.innerHTML = `
+    <h1 style="margin-top:4px">Takip</h1>
+    <p class="sub">Maç başlamadan önceki son oran ve isabetle kaydedilen ayakların gerçek sonuçları · ${settled.length} maç sonuçlandı · ${pending.length} maç bekliyor</p>
+    <div class="controls" style="margin-top:0">
+      <span class="lbl">DÖNEM</span>${seg("td", TK.days, [[7, "7 gün"], [30, "30 gün"], [0, "Hepsi"]])}
+      <span class="lbl">DEĞER</span>${seg("tv", TK.minVal, [[-9, "Hepsi"], [0, "0+"], [0.05, "+5"], [0.1, "+10"], [0.2, "+20"]])}
+      <span class="lbl">İSABET</span>${seg("th", TK.minHit, [[0, "Hepsi"], [0.7, "%70+"], [0.8, "%80+"], [0.9, "%90+"]])}
+      <span class="lbl">ORAN</span>${seg("to", TK.odd, [["all", "Hepsi"], ["lt15", "<1.50"], ["15_2", "1.50–2.00"], ["ge2", "2.00+"]])}
+    </div>
+    <div class="chips">${["Tümü", "Gol", "Sonuç", "Korner", "Kart", "Şut"].map(c => `<button class="chip ${TK.cat === c ? "on" : ""}" data-tc="${c}">${c}</button>`).join("")}</div>
+    ${!settled.length ? `<div class="list"><div class="empty">Henüz sonuçlanan maç yok. Kayıt ${recs.length ? `başladı (${recs.length} maç izleniyor); ilk sonuçlar bu maçlar bitince, birkaç saat içinde gelir.` : "bir sonraki veri güncellemesinde başlayacak."}</div></div>` : `
+    <div class="tsum">
+      <div><span>Ayak</span><b>${all.n}</b></div><div><span>Gerçekleşen isabet</span><b>${pct(all.hit)}</b></div>
+      <div><span>Oranın beklediği</span><b>${pct(all.exp)}</b></div><div><span>Ort. oran</span><b>${all.odd ? all.odd.toFixed(2) : "–"}</b></div>
+      <div><span>Getiri (eşit bahis)</span><b class="${all.roi > 0 ? "ok" : "no"}">${all.n ? sgn(all.roi) + "%" : "–"}</b></div>
+    </div>
+    <h3 class="th3">Değer aralığına göre</h3><table class="stbl ttbl">${head}${byVal.map(statRow).join("")}</table>
+    <h3 class="th3">Kategoriye göre</h3><table class="stbl ttbl">${head}${byCat.map(statRow).join("")}</table>
+    <h3 class="th3">Ayaklar (en yeni)</h3>
+    <table class="stbl ttbl"><tr><th>Tarih</th><th>Maç</th><th>Ayak</th><th>Geçmiş</th><th>Oran</th><th>Değer</th><th>Sonuç</th></tr>
+      ${recent.slice(TK.page * per, TK.page * per + per).map(r => `<tr><td>${r.rec.ko.slice(8, 10)}.${r.rec.ko.slice(5, 7)}</td>
+        <td>${esc(r.rec.home)} - ${esc(r.rec.away)}<small class="glg" style="margin:0">${esc(r.rec.lg)} · ${r.rec.res[0]}-${r.rec.res[1]}</small></td>
+        <td>${esc(pickLabel(r.rec, r))}</td><td>${r.s}</td><td>${oddTag(r.o, r.open)}</td>
+        <td class="${r.val > 0 ? "ok" : "no"}">${edgeTxt(r.val)}</td><td class="${r.r ? "ok" : "no"}"><b>${r.r ? "✓" : "✗"}</b></td></tr>`).join("")}
+    </table>
+    <div class="pager"><span>${recent.length ? `${TK.page * per + 1}–${Math.min(recent.length, (TK.page + 1) * per)} / ${recent.length}` : ""}</span>
+      <span><button class="btn" id="tprev">‹</button> <button class="btn" id="tnext">›</button></span></div>`}
+    <p class="note">Her oranlı ayak, maç başlamadan önceki son güncellemedeki oran ve son 10 maçlık isabetiyle (hazırlık maçları hariç) kaydedilir; maç bitince tuttu/tutmadı işlenir. "Gerçekleşen" isabetin "oranın beklediği"nden sürekli yüksek olması ve getirinin artıda kalması değer sinyalinin işe yaradığını gösterir. Birkaç yüz ayaktan az örneklemde sonuçlar büyük ölçüde şansa bağlıdır; ayaklar aynı maçlardan geldiği için birbirinden bağımsız da değildir.</p>`;
+  const again = () => renderTrack();
+  app.querySelectorAll("[data-td]").forEach(b => b.onclick = () => { TK.days = +b.dataset.td; TK.page = 0; again(); });
+  app.querySelectorAll("[data-tv]").forEach(b => b.onclick = () => { TK.minVal = +b.dataset.tv; TK.page = 0; again(); });
+  app.querySelectorAll("[data-th]").forEach(b => b.onclick = () => { TK.minHit = +b.dataset.th; TK.page = 0; again(); });
+  app.querySelectorAll("[data-to]").forEach(b => b.onclick = () => { TK.odd = b.dataset.to; TK.page = 0; again(); });
+  app.querySelectorAll("[data-tc]").forEach(b => b.onclick = () => { TK.cat = b.dataset.tc; TK.page = 0; again(); });
+  const pv = $("#tprev"), nx = $("#tnext");
+  if (pv) pv.onclick = () => { if (TK.page > 0) { TK.page--; again(); } };
+  if (nx) nx.onclick = () => { if (TK.page < pages - 1) { TK.page++; again(); } };
+}
+
+/* ------------------------------ YÖNLENDİRME ------------------------------ */
+function route(){
+  closeDrawer();
+  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track");
+  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk);
+  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
+  window.scrollTo(0, 0);
+}
+window.addEventListener("hashchange", route);
+$("#cfg").onclick = () => showSetup("");
+$("#frToggle").checked = getFr();
+$("#frToggle").onchange = e => { setFr(e.target.checked); applyFriendly(); route(); };
+loadStatus().catch(()=>{}); route();
+</script>
+</body>
+</html>
