@@ -114,6 +114,13 @@ summary{cursor:pointer;margin-bottom:8px}
 .tsum span{display:block;color:var(--muted);font-size:12px}.tsum b{font-size:22px}
 .th3{margin:22px 0 4px;font-size:15px}
 .dpick{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.abgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:12px;margin:8px 0}
+.abcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.abcard h4{margin:0;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.abcard .meta{color:var(--muted);font-size:12px;margin:2px 0 6px}
+.abfoot{display:flex;gap:14px;flex-wrap:wrap;border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-size:12.5px}
+.abfoot span{color:var(--muted)}.abfoot b{font-size:15px;margin-left:4px}
+.kupon{border-color:var(--accent,#2fbf71)}
 .dmatch{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
 .dmatch h4{margin:0 0 2px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
 .dmatch h4 .sc{font-variant-numeric:tabular-nums}
@@ -250,7 +257,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
 <div class="wrap">
   <header>
     <a class="logo" href="#/">⚽ İsabet Oranı</a>
-    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a></nav>
+    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a><a href="#/ai" id="nav-ai">AI-Builder</a></nav>
     <label class="frtgl" title="Kapalıyken hazırlık maçları hem takımların geçmişinden hem de fikstürden çıkarılır"><input type="checkbox" id="frToggle"> Hazırlık maçlarını dahil et</label>
     <span class="status" id="status"></span>
     <button class="btn" id="cfg" title="Veri kaynağını değiştir">⚙</button>
@@ -1195,12 +1202,83 @@ async function renderDays(){
   app.querySelectorAll("[data-da]").forEach(b => b.onclick = () => { DY.all = b.dataset.da === "1"; renderDays(); });
 }
 
+
+/* ============================== AI-BUILDER ============================== */
+const AI = state.ai = { page: 0 };
+let KUPON = null;
+async function renderAI(){
+  await loadDB();
+  const app = $("#app");
+  if (!BOOK || KUPON === null) {
+    app.innerHTML = `<div class="empty">AI-Builder yükleniyor...</div>`;
+    if (!BOOK) BOOK = (await repoJSON("history/picks.json", "main")) || {};
+    if (KUPON === null) KUPON = (await repoJSON("history/kupon.json", "main").catch(() => null)) || {};
+  }
+  const now = Date.now();
+  const recs = Object.values(BOOK).filter(r => r.ab);
+  const up = recs.filter(r => Date.parse(r.ko) > now && Date.parse(r.ko) < now + 48 * 3600e3).sort((a, b) => a.ko.localeCompare(b.ko));
+  const done = recs.filter(r => Array.isArray(r.res) && r.ab.r != null).sort((a, b) => b.ko.localeCompare(a.ko));
+  const pctf = x => Math.round(x * 100) + "%";
+  const legLine = (rec, l) => `<div class="dleg" style="grid-template-columns:22px minmax(0,1fr) 70px 46px">
+      <span class="r ${l.r == null ? "" : l.r ? "ok" : "no"}">${l.r == null ? "•" : l.r ? "✓" : "✗"}</span>
+      <div>${esc(pickLabel(rec, l))}<small>${PK_CAT[l.k] || ""}${l.r != null && rec.res ? (actualOf(l, rec.res) ? " · gerçekleşen: " + actualOf(l, rec.res) : "") : ""}</small></div>
+      <span class="hist">${l.s}</span><b>${l.o.toFixed(2)}</b></div>`;
+  const card = (rec, cls = "") => { const b = rec.ab, v = b.pe - b.pm;
+    return `<div class="abcard ${cls}"><h4><span>${esc(rec.home)} – ${esc(rec.away)}</span><span>${b.r == null ? "" : `<span class="${b.r ? "ok" : "no"}">${b.r ? "✓ Tuttu" : "✗ Yattı"}</span>`}</span></h4>
+      <div class="meta">${trDay(rec.ko).slice(0, 5)} ${trTime(rec.ko)} · ${esc(rec.lg || "")}${Array.isArray(rec.res) ? ` · ${rec.res[0]}-${rec.res[1]}` : ""}</div>
+      ${b.legs.map(l => legLine(rec, l)).join("")}
+      <div class="abfoot"><div><span>Kombine oran</span><b>${b.O.toFixed(2)}</b></div>
+        <div title="Ayakların takımların son maçlarında birlikte tutma oranından"><span>Geçmişe göre</span><b>${pctf(b.pe)}</b></div>
+        <div title="Ayakların marjsız olasılıklarının çarpımı"><span>Oranlara göre</span><b>${pctf(b.pm)}</b></div>
+        <div><span>Fark</span><b class="${v > 0 ? "ok" : "no"}">${v > 0 ? "+" : ""}${Math.round(v * 100)}</b></div></div>
+      <div class="meta" style="margin:6px 0 0">Birlikte tuttu: ev tarafı ${b.jh || "–"} · deplasman tarafı ${b.ja || "–"}</div></div>`; };
+  // istatistik
+  const st = arr => { const n = arr.length, w = arr.filter(x => x.r).length, profit = arr.reduce((a, x) => a + (x.r ? x.O - 1 : -1), 0);
+    return { n, w, hit: n ? w / n : null, pe: n ? arr.reduce((a, x) => a + x.pe, 0) / n : null, pm: n ? arr.reduce((a, x) => a + x.pm, 0) / n : null, O: n ? arr.reduce((a, x) => a + x.O, 0) / n : null, profit, roi: n ? profit / n : null }; };
+  const sb = st(done.map(r => r.ab));
+  const kd = Object.entries(KUPON || {}).sort((a, b) => b[0].localeCompare(a[0]));
+  const kdone = kd.filter(([, k]) => k.r != null).map(([, k]) => k), sk = st(kdone);
+  const today = dayKey(new Date().toISOString()), kt = (KUPON || {})[today];
+  const kRec = x => ({ home: x.home, away: x.away });
+  const statBox = (t, s) => `<div class="tsum">
+      <div><span>${t}</span><b>${s.n}</b></div>
+      <div><span>Tuttu</span><b>${s.w}${s.n ? ` <small style="font-size:14px">(${pct(s.hit)})</small>` : ""}</b></div>
+      <div><span>Geçmişe göre beklenen</span><b>${pct(s.pe)}</b></div>
+      <div><span>Oranlara göre beklenen</span><b>${pct(s.pm)}</b></div>
+      <div><span>Ort. kombine oran</span><b>${s.O ? s.O.toFixed(2) : "–"}</b></div>
+      <div><span>Net (1 birim)</span><b class="${s.profit > 0 ? "ok" : s.profit < 0 ? "no" : ""}">${s.n ? (s.profit > 0 ? "+" : "") + s.profit.toFixed(2) : "–"}</b></div></div>`;
+  const per = 12, pages = Math.max(1, Math.ceil(done.length / per)); AI.page = Math.min(AI.page, pages - 1);
+  app.innerHTML = `
+    <h1 style="margin-top:4px">AI-Builder</h1>
+    <p class="sub">Sistem her maç için oranlı ayaklardan 2–3'ünü birleştirip en değerli builder'ı kurar; ayrıca her sabah farklı maçlardan 3 ayaklı bir "günün kuponu" oluşturur. Hepsi maç öncesi dondurulur ve sonuçları takip edilir.</p>
+    <h3 class="th3">Günün kuponu ${kt ? `· ${today.slice(8, 10)}.${today.slice(5, 7)}` : ""}</h3>
+    ${kt ? `<div class="abgrid"><div class="abcard kupon"><h4><span>3 maç · kombine ${kt.O.toFixed(2)}</span><span>${kt.r == null ? "" : `<span class="${kt.r ? "ok" : "no"}">${kt.r ? "✓ Tuttu" : "✗ Yattı"}</span>`}</span></h4>
+      <div class="meta">Oluşturuldu: ${trTime(kt.made)} · sonradan değiştirilmez</div>
+      ${kt.legs.map(x => `<div class="dleg" style="grid-template-columns:22px minmax(0,1fr) 70px 46px"><span class="r ${x.r == null ? "" : x.r ? "ok" : "no"}">${x.r == null ? "•" : x.r ? "✓" : "✗"}</span>
+        <div>${esc(pickLabel(kRec(x), x))}<small>${trTime(x.ko)} · ${esc(x.home)} – ${esc(x.away)}</small></div><span class="hist">${x.s}</span><b>${x.o.toFixed(2)}</b></div>`).join("")}
+      <div class="abfoot"><div><span>Kombine</span><b>${kt.O.toFixed(2)}</b></div><div><span>Geçmişe göre</span><b>${pctf(kt.pe)}</b></div><div><span>Oranlara göre</span><b>${pctf(kt.pm)}</b></div></div></div></div>`
+      : `<div class="list"><div class="empty">Bugünün kuponu henüz yok. Kupon her sabah 08:00'den sonraki ilk güncellemede, o gün oynanacak maçlardan oluşturulur.</div></div>`}
+    <h3 class="th3">Yaklaşan maçlar (${up.length})</h3>
+    ${up.length ? `<div class="abgrid">${up.map(r => card(r)).join("")}</div>` : `<div class="list"><div class="empty">Önümüzdeki 48 saatte builder kurulan maç yok. Builder'lar bir sonraki veri güncellemesinde (2 saatte bir) oluşur.</div></div>`}
+    <h3 class="th3">Sonuçlar · maç içi builder</h3>${statBox("Builder", sb)}
+    <h3 class="th3">Sonuçlar · günün kuponu</h3>${statBox("Kupon", sk)}
+    ${kd.length ? `<table class="stbl ttbl"><tr><th>Gün</th><th>Ayaklar</th><th>Oran</th><th>Geçmişe göre</th><th>Sonuç</th></tr>
+      ${kd.map(([d, k]) => `<tr><td>${d.slice(8, 10)}.${d.slice(5, 7)}</td><td>${k.legs.map(x => `<span class="${x.r == null ? "" : x.r ? "ok" : "no"}">${x.r == null ? "•" : x.r ? "✓" : "✗"}</span> ${esc(pickLabel(kRec(x), x))}`).join("<br>")}</td><td>${k.O.toFixed(2)}</td><td>${pctf(k.pe)}</td><td class="${k.r == null ? "" : k.r ? "ok" : "no"}"><b>${k.r == null ? "bekliyor" : k.r ? "✓" : "✗"}</b></td></tr>`).join("")}</table>` : ""}
+    <h3 class="th3">Sonuçlanan builder'lar (${done.length})</h3>
+    ${done.length ? `<div class="abgrid">${done.slice(AI.page * per, AI.page * per + per).map(r => card(r)).join("")}</div>
+    <div class="pager"><span>${AI.page * per + 1}–${Math.min(done.length, (AI.page + 1) * per)} / ${done.length}</span><span><button class="btn" id="aprev">‹</button> <button class="btn" id="anext">›</button></span></div>` : `<div class="list"><div class="empty">Henüz sonuçlanan builder yok; ilk sonuçlar bugünkü maçlar bitince gelir.</div></div>`}
+    <p class="note">"Geçmişe göre" olasılık, ayakların takımların son 10 maçında aynı anda tutup tutmadığından hesaplanır (ayaklar arasındaki ilişki böylece hesaba katılır); küçük örneklem yüzünden olduğundan yüksek çıkma eğilimindedir. "Oranlara göre" iddaa oranlarının marjsız olasılıklarının çarpımıdır. Kombine oran ayak oranlarının çarpımıdır; aynı maçtan ilişkili ayaklarda bahis sitelerinin builder oranı genelde bundan düşüktür, bu yüzden "Net" iyimser bir üst sınır gibi okunmalıdır.</p>`;
+  const pv = $("#aprev"), nx = $("#anext");
+  if (pv) pv.onclick = () => { if (AI.page > 0) { AI.page--; renderAI(); } };
+  if (nx) nx.onclick = () => { if (AI.page < pages - 1) { AI.page++; renderAI(); } };
+}
+
 /* ------------------------------ YÖNLENDİRME ------------------------------ */
 function route(){
   closeDrawer();
-  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track"), dy = h.startsWith("#/days");
-  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-dy").classList.toggle("on", dy); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk && !dy);
-  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : dy ? renderDays() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
+  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track"), dy = h.startsWith("#/days"), ai = h.startsWith("#/ai");
+  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-dy").classList.toggle("on", dy); $("#nav-ai").classList.toggle("on", ai); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk && !dy && !ai);
+  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : dy ? renderDays() : ai ? renderAI() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", route);
