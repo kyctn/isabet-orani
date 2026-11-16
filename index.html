@@ -113,6 +113,14 @@ summary{cursor:pointer;margin-bottom:8px}
 .tsum div{flex:1;min-width:130px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .tsum span{display:block;color:var(--muted);font-size:12px}.tsum b{font-size:22px}
 .th3{margin:22px 0 4px;font-size:15px}
+.dpick{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 10px}
+.dmatch{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:10px 0}
+.dmatch h4{margin:0 0 2px;font-size:14px;display:flex;justify-content:space-between;gap:8px}
+.dmatch h4 .sc{font-variant-numeric:tabular-nums}
+.dleg{display:grid;grid-template-columns:22px minmax(0,1fr) 70px 52px 46px;gap:8px;align-items:center;font-size:12.5px;padding:6px 0;border-top:1px solid var(--line)}
+.dleg small{color:var(--muted);display:block}
+.dleg .r{font-weight:700;text-align:center}
+@media(max-width:760px){.dleg{grid-template-columns:20px minmax(0,1fr) 44px 40px}.dleg .hist{display:none}}
 .ttbl td,.ttbl th{text-align:left;font-size:12.5px;padding:9px 12px}
 /* ---------- nav ---------- */
 .nav{display:flex;gap:4px;margin-left:18px}
@@ -242,7 +250,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
 <div class="wrap">
   <header>
     <a class="logo" href="#/">⚽ İsabet Oranı</a>
-    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a></nav>
+    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a></nav>
     <label class="frtgl" title="Kapalıyken hazırlık maçları hem takımların geçmişinden hem de fikstürden çıkarılır"><input type="checkbox" id="frToggle"> Hazırlık maçlarını dahil et</label>
     <span class="status" id="status"></span>
     <button class="btn" id="cfg" title="Veri kaynağını değiştir">⚙</button>
@@ -1102,12 +1110,97 @@ async function renderTrack(){
   if (nx) nx.onclick = () => { if (TK.page < pages - 1) { TK.page++; again(); } };
 }
 
+
+/* ============================ GÜNLÜK SONUÇLAR ============================ */
+const DY = state.d = { day: null, all: false };
+const trDay = iso => new Date(iso).toLocaleDateString("tr-TR", { timeZone: "Europe/Istanbul", day: "2-digit", month: "2-digit", year: "numeric" });
+const trTime = iso => new Date(iso).toLocaleTimeString("tr-TR", { timeZone: "Europe/Istanbul", hour: "2-digit", minute: "2-digit" });
+const dayKey = iso => { const [d, m, y] = trDay(iso).split("."); return `${y}-${m}-${d}`; };
+const DAYS_TR = ["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cmt"];
+function actualOf(p, s){
+  if (!Array.isArray(s)) return null;
+  const add = (...i) => i.some(j => s[j] == null) ? null : i.reduce((a, j) => a + s[j], 0);
+  const M = { hg: [0], ag: [1], hc: [8], ac: [9], hs: [4], as: [5], hsot: [6], asot: [7], htg: [2, 3], g: [0, 1], c: [8, 9], k: [10, 11, 12, 13], ts: [4, 5], tsot: [6, 7] };
+  const U = { hg: "gol", ag: "gol", g: "gol", htg: "İY gol", hc: "korner", ac: "korner", c: "korner", k: "kart", hs: "şut", as: "şut", ts: "şut", hsot: "isabetli şut", asot: "isabetli şut", tsot: "isabetli şut" };
+  if (M[p.k]) { const v = add(...M[p.k]); return v == null ? null : `${v} ${U[p.k]}`; }
+  return null;
+}
+async function renderDays(){
+  await loadDB();
+  const app = $("#app");
+  if (!BOOK) { app.innerHTML = `<div class="empty">Takip kayıtları yükleniyor...</div>`; BOOK = (await repoJSON("history/picks.json", "main")) || {}; }
+  const qual = (p, rate, val) => DY.all || (rate >= 0.7 && val >= 0.10 && p.o >= 1.3);
+  const byDay = {};
+  for (const r of Object.values(BOOK)) {
+    if (!Array.isArray(r.res)) continue;
+    for (const p of r.picks || []) {
+      if (p.r == null) continue;
+      const rate = p.h / p.t, val = rate - p.p;
+      if (!qual(p, rate, val)) continue;
+      const k = dayKey(r.ko);
+      (byDay[k] = byDay[k] || []).push({ ...p, rec: r, rate, val, cat: PK_CAT[p.k] || "Diğer", open: (r.open || {})[`${p.k}|${p.l}|${p.d}`] });
+    }
+  }
+  const days = Object.keys(byDay).sort().reverse();
+  if (!days.length) { app.innerHTML = `<h1 style="margin-top:4px">Günlük Sonuçlar</h1><div class="list"><div class="empty">Henüz sonuçlanan ayak yok.</div></div>`; return; }
+  if (!DY.day || !byDay[DY.day]) DY.day = days[0];
+  const rows = byDay[DY.day], st = trackStats(rows);
+  const clvRows = rows.filter(r => r.open && r.open > 1.01 && r.o);
+  const clvUp = clvRows.filter(r => r.o < r.open - 0.005).length, clvDn = clvRows.filter(r => r.o > r.open + 0.005).length;
+  const byCat = ["Gol", "Korner", "Kart", "Şut", "Sonuç"].map(c => [c, trackStats(rows.filter(r => r.cat === c))]).filter(([, s]) => s.n);
+  const ob = [["< 1.50", 0, 1.5], ["1.50 – 2.00", 1.5, 2], ["2.00 +", 2, 99]].map(([t, a, b]) => [t, trackStats(rows.filter(r => r.o >= a && r.o < b))]).filter(([, s]) => s.n);
+  const lgs = {}; rows.forEach(r => (lgs[r.rec.lg || "?"] = lgs[r.rec.lg || "?"] || []).push(r));
+  const byLg = Object.entries(lgs).map(([l, rs]) => [l, trackStats(rs)]).sort((a, b) => b[1].n - a[1].n);
+  const mt = {}; rows.forEach(r => { const id = r.rec.ko + r.rec.home; (mt[id] = mt[id] || { rec: r.rec, legs: [] }).legs.push(r); });
+  const matches = Object.values(mt).sort((a, b) => a.rec.ko.localeCompare(b.rec.ko));
+  // günler arası özet (seçilen filtreyle)
+  let cum = 0;
+  const hist = [...days].reverse().map(d => { const s = trackStats(byDay[d]); cum += s.profit; return [d, s, cum]; }).reverse();
+  const tot = trackStats(days.flatMap(d => byDay[d]));
+  const statRow = ([t, s]) => `<tr><td>${esc(t)}</td><td>${s.n}</td><td>${s.w}</td><td class="${s.hit >= s.exp ? "ok" : "no"}"><b>${pct(s.hit)}</b></td><td>${pct(s.exp)}</td><td>${s.odd.toFixed(2)}</td><td class="${s.profit > 0 ? "ok" : s.profit < 0 ? "no" : ""}"><b>${(s.profit > 0 ? "+" : "") + s.profit.toFixed(2)}</b></td></tr>`;
+  const head = `<tr><th></th><th>Ayak</th><th>Tuttu</th><th>Gerçekleşen</th><th>Oranın beklediği</th><th>Ort. oran</th><th>Net (birim)</th></tr>`;
+  const dlabel = d => { const [y, m, dd] = d.split("-"); return `${dd}.${m} ${DAYS_TR[new Date(+y, +m - 1, +dd).getDay()]}`; };
+  const legRow = r => {
+    const act = actualOf(r, r.rec.res);
+    return `<div class="dleg"><span class="r ${r.r ? "ok" : "no"}">${r.r ? "✓" : "✗"}</span>
+      <div>${esc(pickLabel(r.rec, r))}<small>${r.cat}${act ? " · gerçekleşen: " + act : ""}${r.open && Math.abs(r.open - r.o) > 0.005 ? ` · açılış ${r.open.toFixed(2)}` : ""}</small></div>
+      <span class="hist">${r.s}</span><b>${r.o.toFixed(2)}</b><span class="${r.val > 0 ? "ok" : "no"}">${edgeTxt(r.val)}</span></div>`;
+  };
+  app.innerHTML = `
+    <h1 style="margin-top:4px">Günlük Sonuçlar</h1>
+    <p class="sub">${DY.all ? "Kaydedilen tüm oranlı ayaklar" : "Günlük özetteki koşullar: son 10 maçta %70+ isabet, değer +10 ve üstü, oran 1.30 ve üstü"} · maç günü İstanbul saatine göre</p>
+    <div class="controls" style="margin-top:0"><span class="lbl">AYAKLAR</span><div class="seg" style="display:inline-flex"><button data-da="0" class="${DY.all ? "" : "on"}">Özet koşulları</button><button data-da="1" class="${DY.all ? "on" : ""}">Tümü</button></div></div>
+    <div class="dpick">${days.map(d => `<button class="chip ${d === DY.day ? "on" : ""}" data-dd="${d}">${dlabel(d)}</button>`).join("")}</div>
+    <div class="tsum">
+      <div><span>Ayak / maç</span><b>${st.n} / ${matches.length}</b></div>
+      <div><span>Tuttu</span><b>${st.w} <small style="font-size:14px">(${pct(st.hit)})</small></b></div>
+      <div><span>Oranın beklediği</span><b>${pct(st.exp)}</b></div>
+      <div><span>Net (eşit bahis)</span><b class="${st.profit > 0 ? "ok" : "no"}">${(st.profit > 0 ? "+" : "") + st.profit.toFixed(2)} br</b></div>
+      <div><span>Getiri</span><b class="${st.roi > 0 ? "ok" : "no"}">${sgn(st.roi)}%</b></div>
+      <div title="Açılış oranı kapanışta düştüyse piyasa bizim yönümüze gitmiştir"><span>Oran bizim yönümüze kaydı</span><b>${clvRows.length ? `${clvUp} / ${clvRows.length}` : "–"}</b><small style="color:var(--muted);display:block">ters yöne: ${clvDn}</small></div>
+    </div>
+    <h3 class="th3">Market</h3><table class="stbl ttbl">${head}${byCat.map(statRow).join("")}</table>
+    <h3 class="th3">Oran aralığı</h3><table class="stbl ttbl">${head}${ob.map(statRow).join("")}</table>
+    <h3 class="th3">Lig</h3><table class="stbl ttbl">${head}${byLg.map(statRow).join("")}</table>
+    <h3 class="th3">Maç maç (${matches.length})</h3>
+    ${matches.map(m => { const w = m.legs.filter(r => r.r).length; const legs = [...m.legs].sort((a, b) => (b.r - a.r) || b.val - a.val);
+      return `<div class="dmatch"><h4><span>${trTime(m.rec.ko)} · ${esc(m.rec.home)} – ${esc(m.rec.away)}</span><span class="sc">${m.rec.res[0]}-${m.rec.res[1]} · <span class="${w === m.legs.length ? "ok" : w === 0 ? "no" : ""}">${w}/${m.legs.length}</span></span></h4>
+        <small class="glg" style="margin:0">${esc(m.rec.lg || "")}</small>${legs.map(legRow).join("")}</div>`; }).join("")}
+    <h3 class="th3">Gün gün (${days.length} gün · toplam ${tot.n} ayak, ${pct(tot.hit)} isabet, beklenen ${pct(tot.exp)}, net ${(tot.profit > 0 ? "+" : "") + tot.profit.toFixed(2)} br)</h3>
+    <table class="stbl ttbl"><tr><th>Gün</th><th>Ayak</th><th>Tuttu</th><th>Gerçekleşen</th><th>Oranın beklediği</th><th>Ort. oran</th><th>Net</th><th>Kümülatif</th></tr>
+      ${hist.map(([d, s, c]) => `<tr style="cursor:pointer" data-dd="${d}"><td>${dlabel(d)}</td><td>${s.n}</td><td>${s.w}</td><td class="${s.hit >= s.exp ? "ok" : "no"}"><b>${pct(s.hit)}</b></td><td>${pct(s.exp)}</td><td>${s.odd.toFixed(2)}</td><td class="${s.profit > 0 ? "ok" : "no"}">${(s.profit > 0 ? "+" : "") + s.profit.toFixed(2)}</td><td class="${c > 0 ? "ok" : "no"}"><b>${(c > 0 ? "+" : "") + c.toFixed(2)}</b></td></tr>`).join("")}
+    </table>
+    <p class="note">Ayaklar maç başlamadan önceki son oran ve isabetle kaydedilir; "Net" her ayağa 1 birim yatırılmış gibi hesaplanır. Aynı maçtan gelen ayaklar birbirinden bağımsız değildir; tek bir günün sonucu eğilim göstermez.</p>`;
+  app.querySelectorAll("[data-dd]").forEach(b => b.onclick = () => { DY.day = b.dataset.dd; renderDays(); window.scrollTo(0, 0); });
+  app.querySelectorAll("[data-da]").forEach(b => b.onclick = () => { DY.all = b.dataset.da === "1"; renderDays(); });
+}
+
 /* ------------------------------ YÖNLENDİRME ------------------------------ */
 function route(){
   closeDrawer();
-  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track");
-  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk);
-  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
+  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track"), dy = h.startsWith("#/days");
+  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-dy").classList.toggle("on", dy); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk && !dy);
+  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : dy ? renderDays() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", route);
