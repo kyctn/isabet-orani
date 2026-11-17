@@ -260,7 +260,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
     <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a><a href="#/ai" id="nav-ai">AI-Builder</a></nav>
     <label class="frtgl" title="Kapalıyken hazırlık maçları hem takımların geçmişinden hem de fikstürden çıkarılır"><input type="checkbox" id="frToggle"> Hazırlık maçlarını dahil et</label>
     <span class="status" id="status"></span>
-    <button class="btn" id="cfg" title="Veri kaynağını değiştir">⚙</button>
+    <button class="btn" id="cfg" title="Hesap ve ayarlar">⚙</button>
   </header>
   <main id="app"></main>
   <footer id="foot" style="margin-top:28px;color:var(--muted)"></footer>
@@ -327,23 +327,137 @@ const fmtVal = v => v === null || v === undefined ? "–" : v;
 let DB = null;
 function getRepo(){ try { return localStorage.getItem("io_repo") || ""; } catch (e) { return window._repo || ""; } }
 function setRepo(v){ window._repo = v; try { v ? localStorage.setItem("io_repo", v) : localStorage.removeItem("io_repo"); } catch (e) {} }
-function getTok(){ try { return localStorage.getItem("io_tok") || ""; } catch (e) { return window._tok || ""; } }
+function getTok(){ try { return localStorage.getItem("io_tok") || window._tok || ""; } catch (e) { return window._tok || ""; } }
 function setTok(v){ window._tok = v; try { v ? localStorage.setItem("io_tok", v) : localStorage.removeItem("io_tok"); } catch (e) {} }
 /* Kurulum linki: #kur=kullanıcı/depo~github_pat_... -> ayarları kaydeder ve linkten siler (yer imi olarak saklanabilir) */
 (function(){ const m = location.hash.match(/^#kur=([^~]+)~(.+)$/); if (!m) return;
   setRepo(decodeURIComponent(m[1]).trim()); setTok(decodeURIComponent(m[2]).trim());
   try { history.replaceState(null, "", location.pathname + location.search + "#/"); } catch (e) { location.hash = "#/"; } })();
 function dataUrl(){ const v = getRepo().trim(); if (!v) return ""; return /^https?:/.test(v) ? v : `https://raw.githubusercontent.com/${v.replace(/^\/+|\/+$/g, "")}/data/data.json`; }
-function showSetup(msg){
+/* ============================ GİRİŞ (kullanıcı adı + şifre) ============================
+   users.json (bu sitenin deposunda, herkese açık): her kullanıcı için erişim anahtarı, kullanıcının şifresiyle
+   AES-GCM ile şifrelenmiş olarak durur (anahtar PBKDF2-SHA256, 310 000 tur). Kullanıcı adları da özetlenmiştir.
+   Şifre doğruysa anahtar tarayıcıda çözülür ve veriler eskisi gibi GitHub'dan okunur. */
+const KDF_IT = 310000;
+const b64 = u8 => { let s = ""; u8.forEach(b => s += String.fromCharCode(b)); return btoa(s); };
+const unb64 = s => Uint8Array.from(atob(s), c => c.charCodeAt(0));
+async function uid(name){ const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("isabet:" + name.trim().toLowerCase())); return b64(new Uint8Array(h)).slice(0, 22); }
+async function pwKey(pw, salt){
+  const base = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey({ name: "PBKDF2", salt, iterations: KDF_IT, hash: "SHA-256" }, base, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]);
+}
+async function wrapTok(tok, pw){
+  const s = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+  const c = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await pwKey(pw, s), new TextEncoder().encode(tok));
+  return { s: b64(s), i: b64(iv), c: b64(new Uint8Array(c)) };
+}
+async function unwrapTok(e, pw){
+  const p = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(e.i) }, await pwKey(pw, unb64(e.s)), unb64(e.c));
+  return new TextDecoder().decode(p);
+}
+let USERS;
+async function loadUsers(){
+  if (USERS !== undefined) return USERS;
+  try { const r = await fetch("users.json?t=" + Date.now(), { cache: "no-store" }); USERS = r.ok ? await r.json() : null; } catch (e) { USERS = null; }
+  return USERS;
+}
+function getUser(){ try { return localStorage.getItem("io_user") || window._user || ""; } catch (e) { return window._user || ""; } }
+function setUser(v, remember){ window._user = v; try { v && remember ? localStorage.setItem("io_user", v) : localStorage.removeItem("io_user"); } catch (e) {} }
+const INP = `style="width:100%;padding:10px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit"`;
+let SETUP_MODE = "";
+async function showSetup(msg){
+  const U = await loadUsers();
+  if (U && getTok() && /Erişim anahtarı geçersiz/.test(msg || "")) { setTok(""); window._tok = ""; return showLogin("Oturumun geçersiz ya da anahtarın süresi dolmuş; tekrar giriş yap."); }
+  if (getTok() && SETUP_MODE !== "token") return showAccount(msg);
+  if (U && SETUP_MODE !== "token") return showLogin(msg);
   $("#app").innerHTML = `<div class="list" style="padding:22px;max-width:560px">
-    <h1 style="margin-top:0;font-size:19px">Veri kaynağı</h1>
+    <h1 style="margin-top:0;font-size:19px">Anahtarla bağlan</h1>
     ${msg ? `<p class="no">${esc(msg)}</p>` : ""}
-    <p class="sub">GitHub deponu <b>kullanıcı-adı/depo-adı</b> şeklinde yaz . Bu ayar sadece bu tarayıcıda saklanır.</p>
-    <input id="repo" value="${esc(getRepo() || "kyctn/isabet-veri")}" placeholder="kullanıcı-adı/depo-adı" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
+    <p class="sub">GitHub deponu <b>kullanıcı-adı/depo-adı</b> şeklinde yaz. Bu ayar sadece bu tarayıcıda saklanır.</p>
+    <input id="repo" value="${esc(getRepo() || "kyctn/isabet-veri")}" placeholder="kullanıcı-adı/depo-adı" ${INP}>
     <p class="sub" style="margin-top:14px">Erişim anahtarı (gizli depo için; github_pat_ ile başlar). Sadece bu tarayıcıda saklanır.</p>
-    <input id="tok" type="password" value="${esc(getTok())}" placeholder="github_pat_..." autocomplete="off" style="width:100%;padding:9px 11px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--text);font:inherit">
-    <p><button class="btn green" id="saveRepo">Kaydet</button></p></div>`;
-  $("#saveRepo").onclick = () => { setRepo($("#repo").value.trim()); setTok($("#tok").value.trim()); DB = null; loadStatus().catch(()=>{}); route(); };
+    <input id="tok" type="password" value="${esc(getTok())}" placeholder="github_pat_..." autocomplete="off" ${INP}>
+    <p><button class="btn green" id="saveRepo">Kaydet</button> ${U ? `<a href="#" id="toLogin" style="margin-left:10px">Kullanıcı adı ve şifreyle gir</a>` : ""}</p></div>`;
+  $("#saveRepo").onclick = () => { setRepo($("#repo").value.trim()); setTok($("#tok").value.trim()); SETUP_MODE = ""; DB = null; BOOK = null; KUPON = null; loadStatus().catch(()=>{}); route(); };
+  if ($("#toLogin")) $("#toLogin").onclick = e => { e.preventDefault(); SETUP_MODE = ""; showSetup(""); };
+}
+function showLogin(msg, uname){
+  $("#app").innerHTML = `<div class="list" style="padding:22px;max-width:420px;margin:30px auto">
+    <h1 style="margin-top:0;font-size:20px">Giriş</h1>
+    ${msg ? `<p class="no">${esc(msg)}</p>` : ""}
+    <form id="lf" autocomplete="on">
+      <p class="sub" style="margin-bottom:6px">Kullanıcı adı</p>
+      <input id="lu" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" value="${esc(uname || getUser())}" ${INP}>
+      <p class="sub" style="margin:12px 0 6px">Şifre</p>
+      <input id="lp" name="password" type="password" autocomplete="current-password" ${INP}>
+      <label style="display:flex;gap:8px;align-items:center;margin:12px 0;font-size:13.5px"><input type="checkbox" id="lr" checked> Bu cihazda beni hatırla</label>
+      <button class="btn green" type="submit" id="lb" style="width:100%;padding:10px">Giriş yap</button>
+    </form>
+    <p style="margin:14px 0 0;font-size:12.5px"><a href="#" id="toTok" style="color:var(--muted)">Erişim anahtarıyla bağlan</a></p></div>`;
+  if (!(uname || getUser())) $("#lu").focus(); else $("#lp").focus();
+  $("#toTok").onclick = e => { e.preventDefault(); SETUP_MODE = "token"; showSetup(""); };
+  $("#lf").onsubmit = async e => {
+    e.preventDefault();
+    const name = $("#lu").value.trim(), pw = $("#lp").value, rem = $("#lr").checked, b = $("#lb");
+    if (!name || !pw) return;
+    b.disabled = true; b.textContent = "Kontrol ediliyor...";
+    const U = await loadUsers(), ent = U && U.users && U.users[await uid(name)];
+    let tok = null;
+    if (ent) { try { tok = await unwrapTok(ent, pw); } catch (err) { tok = null; } }
+    if (!tok) { b.disabled = false; b.textContent = "Giriş yap"; return showLogin("Kullanıcı adı veya şifre hatalı.", name); }
+    setRepo(U.repo || "kyctn/isabet-veri");
+    if (rem) setTok(tok); else { window._tok = tok; try { localStorage.removeItem("io_tok"); } catch (err) {} }
+    setUser(name.toLowerCase(), rem); SETUP_MODE = ""; DB = null; BOOK = null; KUPON = null;
+    loadStatus().catch(()=>{}); route();
+  };
+}
+function logout(){ setTok(""); window._tok = ""; setRepo(""); setUser("", false); DB = null; BOOK = null; KUPON = null; SETUP_MODE = ""; location.hash = "#/"; showSetup(""); }
+function showAccount(msg){
+  const u = getUser();
+  $("#app").innerHTML = `<div class="list" style="padding:22px;max-width:640px">
+    <h1 style="margin-top:0;font-size:19px">Hesap</h1>
+    ${msg ? `<p class="no">${esc(msg)}</p>` : ""}
+    <p class="sub">${u ? `Giriş yapan: <b>${esc(u)}</b>` : "Erişim anahtarıyla bağlısın."} · Veri: ${esc(getRepo())}</p>
+    <p><button class="btn" id="goHome">Siteye dön</button> <button class="btn" id="lo">Çıkış yap</button> <button class="btn" id="tokMode">Anahtarı değiştir</button></p>
+    <h3 class="th3">Kullanıcı ekle / şifre değiştir</h3>
+    <p class="sub">Yeni kullanıcının erişim anahtarı, seçtiğin şifreyle bu tarayıcıda şifrelenir; ortaya çıkan <b>users.json</b> içeriğini GitHub'a kaydedersin. Testçi başına ayrı (salt okunur) anahtar kullanırsan, birinin erişimini o anahtarı silerek kapatabilirsin.</p>
+    <div style="display:grid;gap:8px">
+      <input id="au" placeholder="kullanıcı adı (ör. ahmet)" autocomplete="off" autocapitalize="none" ${INP}>
+      <div style="display:flex;gap:8px"><input id="ap" placeholder="şifre (en az 12 karakter)" autocomplete="new-password" ${INP}><button class="btn" id="gen" type="button">Üret</button></div>
+      <input id="at" type="password" placeholder="erişim anahtarı (boş bırakırsan şu anki anahtar kullanılır)" autocomplete="off" ${INP}>
+      <div><button class="btn green" id="addU">Ekle / güncelle</button> <button class="btn" id="delU">Bu kullanıcıyı sil</button></div>
+    </div>
+    <div id="uout"></div></div>`;
+  $("#goHome").onclick = () => { location.hash = "#/"; route(); };
+  $("#lo").onclick = logout;
+  $("#tokMode").onclick = () => { SETUP_MODE = "token"; showSetup(""); };
+  $("#gen").onclick = () => { const a = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"; const r = crypto.getRandomValues(new Uint32Array(14)); $("#ap").value = Array.from(r, x => a[x % a.length]).join(""); };
+  const out = async (txt, note) => {
+    const exists = !!(await loadUsers());
+    const url = exists ? "https://github.com/kyctn/isabet-orani/edit/main/users.json" : "https://github.com/kyctn/isabet-orani/new/main?filename=users.json";
+    $("#uout").innerHTML = `<p class="ok" style="margin-top:14px">${esc(note)}</p>
+      <p class="sub">1) Aşağıdaki metni kopyala. 2) <a href="${url}" target="_blank" rel="noopener">GitHub'da users.json'ı aç</a>, içindekini tamamen silip yapıştır ve <b>Commit changes</b> de. 1–2 dakika içinde giriş çalışır.</p>
+      <textarea id="ujson" readonly style="width:100%;height:150px;font:12px ui-monospace,monospace;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px">${esc(txt)}</textarea>
+      <p><button class="btn" id="cp">Kopyala</button></p>`;
+    $("#cp").onclick = async () => { try { await navigator.clipboard.writeText($("#ujson").value); $("#cp").textContent = "Kopyalandı"; } catch (e) { $("#ujson").select(); document.execCommand("copy"); $("#cp").textContent = "Kopyalandı"; } };
+  };
+  const cur = async () => { const U = await loadUsers(); return JSON.parse(JSON.stringify(U || { v: 1, repo: getRepo() || "kyctn/isabet-veri", users: {} })); };
+  $("#addU").onclick = async () => {
+    const name = $("#au").value.trim().toLowerCase(), pw = $("#ap").value, tok = $("#at").value.trim() || getTok();
+    if (!/^[a-z0-9._-]{2,30}$/.test(name)) return alert("Kullanıcı adı 2–30 karakter olmalı (harf, rakam, . _ -).");
+    if (pw.length < 12) return alert("Şifre en az 12 karakter olmalı (dosya herkese açık olduğu için tahmin edilmesi zor olmalı).");
+    if (!/^(github_pat_|ghp_)/.test(tok)) return alert("Geçerli bir erişim anahtarı yok.");
+    $("#addU").disabled = true; $("#addU").textContent = "Şifreleniyor...";
+    const U = await cur(); U.users[await uid(name)] = await wrapTok(tok, pw);
+    $("#addU").disabled = false; $("#addU").textContent = "Ekle / güncelle";
+    out(JSON.stringify(U, null, 1), `"${name}" eklendi. Şifreyi kullanıcıya ayrıca ilet (bu sayfa şifreyi hiçbir yere kaydetmez).`);
+  };
+  $("#delU").onclick = async () => {
+    const name = $("#au").value.trim().toLowerCase(); if (!name) return alert("Silinecek kullanıcı adını yaz.");
+    const U = await cur(), k = await uid(name);
+    if (!U.users[k]) return alert("Bu kullanıcı users.json'da yok.");
+    delete U.users[k]; out(JSON.stringify(U, null, 1), `"${name}" silindi. Tamamen kapatmak için o kullanıcının erişim anahtarını GitHub'dan da sil.`);
+  };
 }
 const pad = x => String(x).padStart(2, "0");
 const localStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
