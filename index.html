@@ -329,6 +329,10 @@ function getRepo(){ try { return localStorage.getItem("io_repo") || ""; } catch 
 function setRepo(v){ window._repo = v; try { v ? localStorage.setItem("io_repo", v) : localStorage.removeItem("io_repo"); } catch (e) {} }
 function getTok(){ try { return localStorage.getItem("io_tok") || ""; } catch (e) { return window._tok || ""; } }
 function setTok(v){ window._tok = v; try { v ? localStorage.setItem("io_tok", v) : localStorage.removeItem("io_tok"); } catch (e) {} }
+/* Kurulum linki: #kur=kullanıcı/depo~github_pat_... -> ayarları kaydeder ve linkten siler (yer imi olarak saklanabilir) */
+(function(){ const m = location.hash.match(/^#kur=([^~]+)~(.+)$/); if (!m) return;
+  setRepo(decodeURIComponent(m[1]).trim()); setTok(decodeURIComponent(m[2]).trim());
+  try { history.replaceState(null, "", location.pathname + location.search + "#/"); } catch (e) { location.hash = "#/"; } })();
 function dataUrl(){ const v = getRepo().trim(); if (!v) return ""; return /^https?:/.test(v) ? v : `https://raw.githubusercontent.com/${v.replace(/^\/+|\/+$/g, "")}/data/data.json`; }
 function showSetup(msg){
   $("#app").innerHTML = `<div class="list" style="padding:22px;max-width:560px">
