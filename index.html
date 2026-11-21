@@ -257,7 +257,7 @@ input[type=range]{width:100%;accent-color:var(--green)}
 <div class="wrap">
   <header>
     <a class="logo" href="#/">⚽ İsabet Oranı</a>
-    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a><a href="#/ai" id="nav-ai">AI-Builder</a></nav>
+    <nav class="nav"><a href="#/" id="nav-bb">Bet Builder</a><a href="#/screener" id="nav-ps">Prop Screener</a><a href="#/value" id="nav-vl">Değerli Oranlar</a><a href="#/track" id="nav-tk">Takip</a><a href="#/days" id="nav-dy">Günlük Sonuçlar</a><a href="#/ai" id="nav-ai">AI-Builder</a><a href="#/model" id="nav-md">Model</a></nav>
     <label class="frtgl" title="Kapalıyken hazırlık maçları hem takımların geçmişinden hem de fikstürden çıkarılır"><input type="checkbox" id="frToggle"> Hazırlık maçlarını dahil et</label>
     <span class="status" id="status"></span>
     <button class="btn" id="cfg" title="Hesap ve ayarlar">⚙</button>
@@ -1391,12 +1391,51 @@ async function renderAI(){
   if (nx) nx.onclick = () => { if (AI.page < pages - 1) { AI.page++; renderAI(); } };
 }
 
+/* ------------------------------ MODEL ------------------------------ */
+let MODEL = null; const MD = { day: null };
+async function renderModel(){
+  const app = $("#app");
+  if (!MODEL) { app.innerHTML = `<div class="empty">Model yükleniyor...</div>`; MODEL = (await repoJSON("history/model/latest.json", "main").catch(() => null)) || {}; }
+  const days = Object.keys(MODEL.days || {}).sort().reverse();
+  if (!days.length) { app.innerHTML = `<h1 style="margin-top:4px">Model</h1><div class="list"><div class="empty">Henüz model çıktısı yok. İlk liste bir sonraki veri güncellemesinde (2 saatte bir) oluşur.</div></div>`; return; }
+  if (!MD.day || !days.includes(MD.day)) MD.day = days[0];
+  const st = MODEL.stats || {}, tg = st.tags || {};
+  const dd = d => `${d.slice(8, 10)}.${d.slice(5, 7)}`;
+  const box = (t, g) => { g = g || { n: 0, w: 0, pl: 0, open: 0 }; return `<div class="tsum">
+      <div><span>${t} listesi</span><b>${g.n}</b></div>
+      <div><span>Tuttu</span><b>${g.w}${g.n ? ` <small style="font-size:14px">(${pct(g.w / g.n)})</small>` : ""}</b></div>
+      <div><span>Net (1 birim, iddaa oranı)</span><b class="${g.pl > 0 ? "ok" : g.pl < 0 ? "no" : ""}">${g.n ? (g.pl > 0 ? "+" : "") + g.pl.toFixed(2) : "–"}</b></div>
+      <div><span>ROI</span><b class="${g.pl > 0 ? "ok" : g.pl < 0 ? "no" : ""}">${g.n ? (g.pl / g.n * 100).toFixed(1) + "%" : "–"}</b></div>
+      <div><span>Bekleyen</span><b>${g.open}</b></div></div>`; };
+  const rows = [];
+  for (const m of MODEL.days[MD.day] || []) for (const l of m.legs) rows.push({ m, l });
+  rows.sort((a, b) => (a.l.tag + a.m.t).localeCompare(b.l.tag + b.m.t) || b.l.ev - a.l.ev);
+  const res = l => l.res == null ? `<span>•</span>` : l.res ? `<b class="ok">✓</b>` : `<b class="no">✗</b>`;
+  const tbl = tag => { const r = rows.filter(x => x.l.tag === tag); return r.length ? `<table class="stbl ttbl"><tr><th></th><th>Saat</th><th>Maç</th><th>Bahis</th><th title="DataGaffer simülasyon yüzdesi">DG</th><th title="Dixon-Coles (kendi verimizle)">DC</th><th title="Takımların son maçlarında tutma">Son maçlar</th><th title="Birleşik model">Model</th><th>iddaa</th><th>EV</th></tr>
+    ${r.map(({ m, l }) => `<tr><td>${res(l)}</td><td>${trTime(m.t)}</td><td>${esc(m.h)} – ${esc(m.a)}<small style="display:block;opacity:.6">${esc(m.lg || "")}${m.score ? " · " + m.score : ""}</small></td><td>${esc(l.lbl)}</td><td>${l.dg}</td><td>${l.dc == null ? "–" : l.dc}</td><td>${l.hr ? l.hr[0] + "/" + l.hr[1] : "–"}</td><td><b>${l.pf}</b></td><td>${l.io.toFixed(2)}</td><td class="${l.ev > 0 ? "ok" : "no"}">${l.ev > 0 ? "+" : ""}${l.ev.toFixed(2)}</td></tr>`).join("")}</table>` : `<div class="list"><div class="empty">Bu gün için ${tag} listesinde bacak yok.</div></div>`; };
+  const cal = Object.entries(st.calib || {}), fm = Object.entries(st.fam || {});
+  const R = MODEL.rules || {};
+  app.innerHTML = `
+    <h1 style="margin-top:4px">Model</h1>
+    <p class="sub">DataGaffer olasılığı (geçmiş isabetine göre düzeltilmiş) + takımların son maçlarındaki tutma oranı + Dixon-Coles birleşik modeli, iddaa oranıyla karşılaştırılır. Liste maç başlayana kadar 2 saatte bir güncellenir, başlayınca donar. Son güncelleme: ${MODEL.upd ? trDay(MODEL.upd).slice(0, 5) + " " + trTime(MODEL.upd) : "–"}</p>
+    <div class="pager" style="justify-content:flex-start;gap:6px;flex-wrap:wrap">${days.map(d => `<button class="btn${d === MD.day ? " on" : ""}" data-md="${d}">${dd(d)}</button>`).join("")}</div>
+    <h3 class="th3">A listesi · yüksek olasılık <small style="opacity:.6">(model ≥ %${Math.round((R.A || {}).p * 100 || 70)}, oran ≥ ${(R.A || {}).o || 1.3}, EV ≥ +${(R.A || {}).ev || .03})</small></h3>${tbl("A")}
+    <h3 class="th3">B listesi · yüksek değer, yüksek risk <small style="opacity:.6">(model %${Math.round(((R.B || {}).lo || .45) * 100)}–${Math.round(((R.B || {}).hi || .7) * 100)}, EV ≥ +${(R.B || {}).ev || .08})</small></h3>${tbl("B")}
+    <h3 class="th3">Birikimli sonuçlar</h3>${box("A", tg.A)}${box("B", tg.B)}
+    ${cal.length ? `<h3 class="th3">Kalibrasyon · iddaa oranlı tüm bacaklar</h3><table class="stbl ttbl"><tr><th>Model yüzdesi</th><th>Bacak</th><th>Beklenen</th><th>Gerçekleşen</th></tr>
+      ${cal.map(([k, [n, w, p]]) => `<tr><td>%${k}–${+k + 10}</td><td>${n}</td><td>${p}%</td><td class="${Math.abs(w / n * 100 - p) <= 5 ? "ok" : "no"}"><b>${(w / n * 100).toFixed(1)}%</b></td></tr>`).join("")}</table>` : ""}
+    ${fm.length ? `<h3 class="th3">Market ailesine göre</h3><table class="stbl ttbl"><tr><th>Aile</th><th>Bacak</th><th>Beklenen</th><th>Gerçekleşen</th></tr>
+      ${fm.map(([k, [n, w, p]]) => `<tr><td>${esc(k)}</td><td>${n}</td><td>${p}%</td><td><b>${(w / n * 100).toFixed(1)}%</b></td></tr>`).join("")}</table>` : ""}
+    <p class="note">EV = model olasılığı × iddaa oranı − 1. Uzun oranlarda yüksek EV çoğu zaman model hatasıdır; DC sütunu (Dixon-Coles) DG'den çok farklıysa dikkat. Aynı maçtan bacaklar birbirine bağlıdır. "Kalibrasyon" tablosunda "Gerçekleşen" ile "Beklenen" yakınsa model dürüst demektir.</p>`;
+  app.querySelectorAll("[data-md]").forEach(b => b.onclick = () => { MD.day = b.dataset.md; renderModel(); });
+}
+
 /* ------------------------------ YÖNLENDİRME ------------------------------ */
 function route(){
   closeDrawer();
-  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track"), dy = h.startsWith("#/days"), ai = h.startsWith("#/ai");
-  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-dy").classList.toggle("on", dy); $("#nav-ai").classList.toggle("on", ai); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk && !dy && !ai);
-  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : dy ? renderDays() : ai ? renderAI() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
+  const h = location.hash, m = h.match(/^#\/match\/(\d+)/), scr = h.startsWith("#/screener"), vl = h.startsWith("#/value"), tk = h.startsWith("#/track"), dy = h.startsWith("#/days"), ai = h.startsWith("#/ai"), md = h.startsWith("#/model");
+  $("#nav-ps").classList.toggle("on", scr); $("#nav-vl").classList.toggle("on", vl); $("#nav-tk").classList.toggle("on", tk); $("#nav-dy").classList.toggle("on", dy); $("#nav-ai").classList.toggle("on", ai); $("#nav-md").classList.toggle("on", md); $("#nav-bb").classList.toggle("on", !scr && !vl && !tk && !dy && !ai && !md);
+  (m ? renderMatch(+m[1]) : scr ? renderScreener() : vl ? renderValue() : tk ? renderTrack() : dy ? renderDays() : ai ? renderAI() : md ? renderModel() : renderList()).catch(e => showSetup(e.message === "NO_SOURCE" ? "" : e.message));
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", route);
